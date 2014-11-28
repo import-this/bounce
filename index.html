@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html manifest="cache.appcache">
+	<head>
+		<meta charset="utf-8">
+
+		<link rel="stylesheet" type="text/css" href="css/bounce.css">
+
+		<script type="text/javascript" src="js/cog.js"></script>
+		<script type="text/javascript" src="js/bounce.js"></script>
+
+		<title>Bounce</title>
+	</head>
+	<body>
+		<div>
+			<canvas id="bounce">
+				Bounce is an HTML5 application. Unfortunately, your browser
+				does not support it. Please upgrade to a modern browser.
+			</canvas>
+			<!-- TODO: Fix menu -->
+			<div id="start-menu" style="display:none">
+				<h2>Choose difficulty</h2>
+				<ol id="start-menu-items">
+					<li tabindex="1">You could as well be dead.</li>
+					<li tabindex="2">Meh.</li>
+					<li tabindex="3">Ok.</li>
+					<li tabindex="4">Damn.</li>
+					<li tabindex="5">Bots Only.</li>
+				</ol>
+			</div>
+			<!-- TODO: Add end menu -->
+			<div id="end-menu">
+
+			</div>
+			<script type="text/javascript" src="js/play.js"></script>
+		</div>
+	</body>
+</html>

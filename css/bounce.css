@@ -1,0 +1,30 @@
+/*
+ * Make the canvas fullscreen.
+ * http://stackoverflow.com/questions/4288253/html5-canvas-100-width-height-of-viewport
+ * http://stackoverflow.com/questions/1664785/resize-html5-canvas-to-fit-window
+ * http://www.thefutureoftheweb.com/blog/100-percent-height-interface
+ */
+* {
+	margin: 0;
+	padding: 0;
+}
+html, body {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;	/* no scrollbar */
+}
+canvas {
+	display: block;
+}
+#start-menu {
+	position: absolute;
+	top: 0;
+	z-index: 3;
+	background-color: black;
+	color: white;
+	text-align: center;
+	font-size: large;
+}
+#start-menu-items {
+	list-style-type: none;
+}

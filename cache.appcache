@@ -1,0 +1,20 @@
+CACHE MANIFEST
+# Update the next line after a change is made.
+# 2014-11-26:v1.0.2
+
+# Do NOT use backslashes before relative paths.
+
+# Main page
+index.html
+
+# CSS
+css/bounce.css
+
+# JavaScript
+js/cog.js
+js/bounce.js
+js/play.js
+
+# Resources that require the user to be online.
+NETWORK:
+*
