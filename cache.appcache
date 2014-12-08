@@ -1,6 +1,6 @@
 CACHE MANIFEST
 # Update the next line after a change is made.
-# 2014-11-26:v1.0.2
+# 2014-12-7:v1.0.3
 
 # Do NOT use backslashes before relative paths.
 
@@ -11,7 +11,8 @@ index.html
 css/bounce.css
 
 # JavaScript
-js/cog.js
+# TODO: Change to production mode
+//rawgit.com/import-this/cog/master/cog.js
 js/bounce.js
 js/play.js
 
