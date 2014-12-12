@@ -253,7 +253,7 @@ BouncePainter.prototype.clearScore = function() {
 function BounceInputDaemon(element) {
     cog.UserInputDaemon.call(this);
     this.element = element;
-    this.mouseMoved = false;
+    this.mousemoved = false;
     this._pos = {x: 0, y: 0};
 
     var self = this;
@@ -267,7 +267,7 @@ function BounceInputDaemon(element) {
 
         pos.x = event.clientX - rect.left;
         pos.y = event.clientY - rect.top;
-        self.mouseMoved = true;
+        self.mousemoved = true;
     }
 
     this._mousedown = function(event) {
@@ -292,46 +292,55 @@ BounceInputDaemon.prototype.constructor = BounceInputDaemon;
 
 /**
  * Starts the deamon.
+ * @return {BounceInputDaemon} this
  */
 BounceInputDaemon.prototype.start = function() {
-    var element = this.element;
-
-    element.addEventListener('mousedown', this._mousedown, false);
-    element.addEventListener('mouseup', this._mouseup, false);
+    this.element.addEventListener('mousedown', this._mousedown, false);
+    this.element.addEventListener('mouseup', this._mouseup, false);
+    return this;
 };
 
 /**
  * Stops the deamon.
+ * @return {BounceInputDaemon} this
  */
 BounceInputDaemon.prototype.stop = function() {
-    var element = this.element;
-
-    element.removeEventListener('mousedown', this._mousedown, false);
-    element.removeEventListener('mouseup', this._mouseup, false);
+    this.element.removeEventListener('mousedown', this._mousedown, false);
+    this.element.removeEventListener('mouseup', this._mouseup, false);
+    return this;
 };
 
 /**
- * .
+ * Registers an event handler for an event.
+ * @return {BounceInputDaemon} this
  */
-BounceInputDaemon.prototype.on = function(events, handler) {
-    cog.UserInputDaemon.prototype.on.call(this, events, handler, this.element);
+BounceInputDaemon.prototype.on = function(event, handler) {
+    cog.UserInputDaemon.prototype.on.call(this, event, handler);
+    this.element.addEventListener(event, handler, false);
+    return this;
 };
 
 /**
- * .
+ * Removes an event handler.
+ * @return {BounceInputDaemon} this
  */
-BounceInputDaemon.prototype.off = function(events, handler) {
-    cog.UserInputDaemon.prototype.off.call(this, events, handler, this.element);
+BounceInputDaemon.prototype.off = function(event, handler) {
+    cog.UserInputDaemon.prototype.off.call(this, event, handler);
+    this.element.removeEventListener(event, handler, false);
+    return this;
 };
 
 /**
- * This will clear the mouseMoved flag.
+ * Return an object containing the properties `x` and `y`.
+ * This method will clear the mousemoved flag.
+ *
  * For performance reasons, this method does not return a new object.
- * Instead, it updates and returns a preallocated one, so it is a good
- * idea to NOT modify it at all.
+ * Instead, it updates and returns a preallocated one,
+ * so it is a good idea to NOT modify it at all.
+ * @return {Object} The object containing the properties `x` and `y`.
  */
 BounceInputDaemon.prototype.getMousePos = function() {
-    this.mouseMoved = false;
+    this.mousemoved = false;
     return this._pos;
 };
 
@@ -1026,7 +1035,7 @@ Bounce.prototype._play = function() {
                 timestamp = now;
 
                 // No need to redraw the circle if it hasn't moved.
-                if (self.inputDaemon.mouseMoved) {
+                if (self.inputDaemon.mousemoved) {
                     pos = self.inputDaemon.getMousePos();
                     diff = self._diff;
                     painter.clearCircle();
