@@ -909,6 +909,26 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
         y = event.clientY - rect.top;
         self._diff = {dx: circle.x - x, dy: circle.y - y};
     };
+    this._keydownHandler = function(event) {
+        switch (event.which) {
+            case 82:      // r/R: Restart
+                self.restart();
+                break;
+            case 80:      // p/P - Space: Pause/Resume
+                /* falls through */
+            case 32:
+                if (self._paused) {
+                    self.resume();
+                }
+                else {
+                    self.pause();
+                }
+                break;
+            default:
+                // Do nothing.
+                break;
+        }
+    }
 }
 
 Object.defineProperty(Bounce.prototype, 'score', {
@@ -954,6 +974,20 @@ Bounce.prototype._repositionShapes = function() {
     coords = coordlist[i];
     circle.x = coords.x;
     circle.y = coords.y;
+};
+
+/**
+ *
+ */
+Bounce.prototype._addKeyShortcuts = function() {
+    document.addEventListener('keydown', this._keydownHandler, false);
+};
+
+/**
+ *
+ */
+Bounce.prototype._removeKeyShortcuts = function() {
+    document.removeEventListener('keydown', this._keydownHandler, false);
 };
 
 /**
@@ -1004,6 +1038,7 @@ Bounce.prototype.setup = function(bouncer) {
     this._elapsedmillisecs = 0;
     this._bouncer = this._bouncer || bouncer || new NormalBouncer(
         this.circle, this.shapes, this.width, this.height);
+    this._addKeyShortcuts();
     return this;
 };
 
@@ -1160,6 +1195,7 @@ Bounce.prototype.restart = function() {
     this.stop();
     this.painter.clear();
     this._repositionShapes();
+    this._removeKeyShortcuts();
     this.draw();
     this.setup();
     this.start();
