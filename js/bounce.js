@@ -307,6 +307,9 @@ BounceInputDaemon.prototype.start = function() {
 BounceInputDaemon.prototype.stop = function() {
     this.element.removeEventListener('mousedown', this._mousedown, false);
     this.element.removeEventListener('mouseup', this._mouseup, false);
+    // Create an articial mouseup event (to unregister mousemove) in case
+    // the user restarted the game without releasing the mouse button.
+    this._mouseup({preventDefault: function() {}, which: 1});
     return this;
 };
 
@@ -1191,14 +1194,21 @@ Bounce.prototype.resume = function() {
  * @return {Bounce} this
  */
 Bounce.prototype.restart = function() {
+    var self = this;
+    
     this.inputDaemon.trigger('restart');
     this.stop();
-    this.painter.clear();
-    this._repositionShapes();
-    this._removeKeyShortcuts();
-    this.draw();
-    this.setup();
-    this.start();
+    // A call to requestAnimationFrame will make sure that all the effects
+    // of the stop method will take place before being overwritten by the
+    // effects of the setup and start method calls.
+    global.requestAnimationFrame(function() {
+        self.painter.clear();
+        self._repositionShapes();
+        self._removeKeyShortcuts();
+        self.draw();
+        self.setup();
+        self.start();
+    });
     return this;
 };
 
