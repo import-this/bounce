@@ -11,6 +11,7 @@
 
     game = bounce.bounce(canvas).draw();
 
+    // TODO: Fix this after creating menu.
     (function getDifficulty() {
         var levels = document.getElementById('start-menu-items');
 
@@ -27,12 +28,5 @@
         }, false);
     }());
 
-    // Wait for the player to click before starting the game.
-    document.addEventListener('mousedown', function clickHandler(event) {
-        // Left mouse button pressed.
-        if (event.which === 1) {
-            document.removeEventListener('mousedown', clickHandler, false);
-            bounce.play(game, 2);
-        }
-    }, false);
+    bounce.play(game, 2);
 }(bounce));

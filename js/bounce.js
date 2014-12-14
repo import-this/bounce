@@ -1195,7 +1195,7 @@ Bounce.prototype.resume = function() {
  */
 Bounce.prototype.restart = function() {
     var self = this;
-    
+
     this.inputDaemon.trigger('restart');
     this.stop();
     // A call to requestAnimationFrame will make sure that all the effects
@@ -1277,10 +1277,12 @@ function bounce(canvas) {
 
 /**
  * Convenience function. Setups the game specified.
- * @param {Bounce} game -
- * @param {number} difficulty -
+ * @param {Bounce} game - A bounce game instance.
+ * @param {number} [difficulty=3] - The difficulty of the game.
+ * @param {boolean} [autostart=false] - If true, the game will start
+ *      immediately. If false, the game will wait for a click by the user.
  */
-function play(game, difficulty) {
+function play(game, difficulty, autostart) {
     var circle = game.circle,
         shapes = game.shapes,
         width = game.width,
@@ -1310,7 +1312,20 @@ function play(game, difficulty) {
             bouncer = new InsaneBouncer(circle, shapes, width, height);
             break;
     }
-    game.setup(bouncer).start();
+
+    game.setup(bouncer);
+    if (autostart) {
+        game.start();
+    } else {
+        // Wait for the player to click before starting the game.
+        document.addEventListener('mousedown', function clickHandler(event) {
+            // Left mouse button pressed.
+            if (event.which === 1) {
+                document.removeEventListener('mousedown', clickHandler, false);
+                game.start();
+            }
+        }, false);
+    }
 }
 
 // Export public members.
