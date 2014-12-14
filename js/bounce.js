@@ -1039,7 +1039,7 @@ Bounce.prototype.setup = function(bouncer) {
     this._ended = false;
 
     this._elapsedmillisecs = 0;
-    this._bouncer = this._bouncer || bouncer || new NormalBouncer(
+    this._bouncer = bouncer || this._bouncer || new NormalBouncer(
         this.circle, this.shapes, this.width, this.height);
     this._addKeyShortcuts();
     return this;
