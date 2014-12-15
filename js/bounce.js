@@ -48,6 +48,10 @@
 
 "use strict";
 
+function returnFalse() {
+    return false;
+}
+
 /******************************* Drawing Class *******************************/
 
 /*
@@ -309,7 +313,7 @@ BounceInputDaemon.prototype.stop = function() {
     this.element.removeEventListener('mouseup', this._mouseup, false);
     // Create an articial mouseup event (to unregister mousemove) in case
     // the user restarted the game without releasing the mouse button.
-    this._mouseup({preventDefault: function() {}, which: 1});
+    this._mouseup({preventDefault: cog.noop, which: 1});
     return this;
 };
 
@@ -575,9 +579,7 @@ DumbBouncer.prototype.moveShapes = function(dt) {
  *
  * @return {boolean} Always returns false.
  */
-DumbBouncer.prototype.isOutOfBounds = function() {
-    return false;
-};
+DumbBouncer.prototype.isOutOfBounds = returnFalse;
 
 
 /**
