@@ -1034,7 +1034,6 @@ Bounce.prototype.setup = function(bouncer) {
     if (!this._stopped && !this._ended) {
         return this;
     }
-    this.inputDaemon.trigger('setup');
     this._stopped = true;
     this._paused = false;
     this._ended = false;
@@ -1043,6 +1042,7 @@ Bounce.prototype.setup = function(bouncer) {
     this._bouncer = bouncer || this._bouncer || new NormalBouncer(
         this.circle, this.shapes, this.width, this.height);
     this._addKeyShortcuts();
+    this.inputDaemon.trigger('setup');
     return this;
 };
 
@@ -1112,7 +1112,6 @@ Bounce.prototype.start = function() {
     if (!this._stopped || this._ended) {
         return this;
     }
-    this.inputDaemon.trigger('start');
     this._stopped = false;
 
     // Pause the game automatically when the player loses focus.
@@ -1121,6 +1120,7 @@ Bounce.prototype.start = function() {
     this.inputDaemon.on('mousedown', this._mousedownHandler);
     this.inputDaemon.start();
     this._play();
+    this.inputDaemon.trigger('start');
     return this;
 };
 
@@ -1133,7 +1133,6 @@ Bounce.prototype.stop = function() {
     if (this._stopped || this._ended) {
         return this;
     }
-    this.inputDaemon.trigger('stop');
     this._stopped = true;
 
     this.inputDaemon.stop();
@@ -1142,6 +1141,7 @@ Bounce.prototype.stop = function() {
     global.removeEventListener('focus', this._focusHandler, false);
     this.saveStats();
     this._ended = true;
+    this.inputDaemon.trigger('stop');
     return this;
 };
 
@@ -1156,7 +1156,6 @@ Bounce.prototype.pause = function() {
     if (this._paused || this._stopped) {
         return this;
     }
-    this.inputDaemon.trigger('pause');
     this._paused = true;
 
     global.requestAnimationFrame(function() {
@@ -1165,6 +1164,7 @@ Bounce.prototype.pause = function() {
     // Anything can happen to the system while the game is paused. Save the
     // score just in case. The player wouldn't want to lose a new high score.
     this.saveScore();
+    this.inputDaemon.trigger('pause');
     return this;
 };
 
@@ -1179,13 +1179,13 @@ Bounce.prototype.resume = function() {
     if (!this._paused || this._stopped) {
         return this;
     }
-    this.inputDaemon.trigger('resume');
     this._paused = false;
 
     global.requestAnimationFrame(function() {
         self.painter.clearPauseScreen();
     });
     this._play();
+    this.inputDaemon.trigger('resume');
     return this;
 };
 
@@ -1197,7 +1197,6 @@ Bounce.prototype.resume = function() {
 Bounce.prototype.restart = function() {
     var self = this;
 
-    this.inputDaemon.trigger('restart');
     this.stop();
     // A call to requestAnimationFrame will make sure that all the effects
     // of the stop method will take place before being overwritten by the
@@ -1210,6 +1209,7 @@ Bounce.prototype.restart = function() {
         self.setup();
         self.start();
     });
+    this.inputDaemon.trigger('restart');
     return this;
 };
 
