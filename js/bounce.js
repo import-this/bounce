@@ -918,6 +918,7 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
                 self.restart();
                 break;
             case 80:      // p/P - Space: Pause/Resume
+                /*jshint noempty: false */
                 /* falls through */
             case 32:
                 if (self._paused) {
@@ -931,7 +932,7 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
                 // Do nothing.
                 break;
         }
-    }
+    };
 }
 
 Object.defineProperty(Bounce.prototype, 'score', {
@@ -1202,9 +1203,9 @@ Bounce.prototype.restart = function() {
     // of the stop method will take place before being overwritten by the
     // effects of the setup and start method calls.
     global.requestAnimationFrame(function() {
+        self._removeKeyShortcuts();
         self.painter.clear();
         self._repositionShapes();
-        self._removeKeyShortcuts();
         self.draw();
         self.setup();
         self.start();
@@ -1212,8 +1213,11 @@ Bounce.prototype.restart = function() {
     return this;
 };
 
-/****************************** Public Members *******************************/
+/********************************* Public API *********************************/
 
+/**
+ * Create a new circle proportional to the dimensions specified.
+ */
 function _createCircle(width, height) {
     return new cog.Circle({
         x: Math.floor(width / 2),
@@ -1222,6 +1226,9 @@ function _createCircle(width, height) {
     });
 }
 
+/**
+ * Create 2 squares and 2 rectangles proportional to the dimensions specified.
+ */
 function _createShapes(width, height) {
     var squarewidth = Math.floor(0.15 * Math.round((width + height)/2)),
         rectwidth = Math.floor(0.225 * Math.round(0.8*width + 0.2*height)),
@@ -1255,24 +1262,17 @@ function _createShapes(width, height) {
 
 /**
  * Convenience function. Creates a new game to play.
- * @param {canvas} canvas -
+ * @param {canvas} canvas - The canvas to draw the game on.
  * @return {Bounce} The new game.
  */
 function bounce(canvas) {
-    var game,
-        width = canvas.width,
-        height = Math.floor(canvas.height / 2),
-        circle, shapes;
+    var width = canvas.width,
+        height = Math.floor(canvas.height / 2);
 
-    try {
-        circle = _createCircle(width, height);
-        shapes = _createShapes(width, height);
-
-        game = new Bounce(circle, shapes, canvas);
-    } catch (ex) {
-        throw ex;
-    }
-    return game;
+    return new Bounce(
+        _createCircle(width, height),
+        _createShapes(width, height),
+        canvas);
 }
 
 /**

@@ -1,32 +1,40 @@
 /*global bounce */
 (function(bounce) {
     "use strict";
-    var canvas = document.getElementById('bounce'),
-        game;
+    var canvas, game;
 
-    (function fixSize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }());
+    try {
+        canvas = document.getElementById('bounce');
 
-    game = bounce.bounce(canvas).draw();
+        // Make the canvas cover the whole window.
+        (function fixSize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }());
 
-    // TODO: Fix this after creating menu.
-    (function getDifficulty() {
-        var levels = document.getElementById('start-menu-items');
+        game = bounce.bounce(canvas).draw();
 
-        // Use event delegation for clicking the <li> tags.
-        levels.addEventListener('click', function(event) {
-            var target = event.target;
+        // TODO: Fix this after creating menu.
+        (function getDifficulty() {
+            var levels = document.getElementById('start-menu-items');
 
-            // Careful: This check will only work for the specified HTML.
-            // If the menu becomes more complex, the check may have to change.
-            if (target.nodeName === 'LI') {
-                document.getElementById('start-menu').style.display = 'none';
-                bounce.play(game, +target.tabIndex);
-            }
-        }, false);
-    }());
+            // Use event delegation for clicking the <li> tags.
+            levels.addEventListener('click', function(event) {
+                var target = event.target,
+                    menu;
 
-    bounce.play(game, 2);
+                // NOTE: If the menu changes, the check may have to change, too.
+                if (target.nodeName === 'LI') {
+                    menu = document.getElementById('start-menu');
+                    menu.style.display = 'none';
+                    bounce.play(game, +target.tabIndex);
+                }
+            }, false);
+        }());
+
+        bounce.play(game, 2);
+    } catch (ex) {
+        // TODO: Report the error to the user.
+        throw ex;
+    }
 }(bounce));
