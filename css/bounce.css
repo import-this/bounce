@@ -16,7 +16,7 @@ html, body {
 canvas {
 	display: block;
 }
-#start-menu {
+#start-menu, #end-menu {
 	position: absolute;
 	top: 0;
 	z-index: 3;
@@ -27,4 +27,7 @@ canvas {
 }
 #start-menu-items {
 	list-style-type: none;
+}
+#end-menu {
+	display: none;
 }

@@ -1,10 +1,14 @@
 /*global bounce */
 (function(bounce) {
     "use strict";
-    var canvas, game;
+    var canvas, endMenu, restartButton, currScore, highScore, game;
 
     try {
         canvas = document.getElementById('bounce');
+        endMenu = document.getElementById('end-menu'),
+        currScore = document.getElementById('curr-score'),
+        highScore = document.getElementById('high-score'),
+        restartButton = document.getElementById('restart-button');
 
         // Make the canvas cover the whole window.
         (function fixSize() {
@@ -31,6 +35,20 @@
                 }
             }, false);
         }());
+
+        game.inputDaemon.on('stop', function showEndMenu() {
+            currScore.innerHTML = game.score.toString();
+            highScore.innerHTML = game.storageManager.getHighScore();
+            endMenu.style.display = 'block';
+        });
+
+        game.inputDaemon.on('restart', function hideEndMenu() {
+            endMenu.style.display = 'none';
+        });
+
+        restartButton.addEventListener('click', function restart() {
+            game.restart();
+        }, false);
 
         bounce.play(game, 2);
     } catch (ex) {

@@ -16,7 +16,7 @@
 		<div>
 			<canvas id="bounce">
 				Bounce is an HTML5 application. Unfortunately, your browser
-				does not support it. Please upgrade to a modern browser.
+				does not seem to support it. Please upgrade to a modern browser.
 			</canvas>
 			<!-- TODO: Fix menu -->
 			<div id="start-menu" style="display:none">
@@ -29,9 +29,12 @@
 					<li tabindex="5">Bots Only.</li>
 				</ol>
 			</div>
-			<!-- TODO: Add end menu -->
 			<div id="end-menu">
-
+				<div>Current Score: <span id="curr-score"></span></div>
+				<div>High Score: <span id="high-score"></span></div>
+				<div>
+					<button type="button" id="restart-button">Restart</button>
+				</div>
 			</div>
 			<script type="text/javascript" src="js/play.js"></script>
 		</div>
