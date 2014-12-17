@@ -16,8 +16,8 @@ html, body {
 canvas {
 	display: block;
 }
-#start-menu, #end-menu {
-	position: absolute;
+#start-menu, #end-menu, #error-msg {
+	position: fixed;
 	top: 0;
 	z-index: 3;
 	background-color: black;
@@ -28,6 +28,6 @@ canvas {
 #start-menu-items {
 	list-style-type: none;
 }
-#end-menu {
+#end-menu, #error-msg {
 	display: none;
 }

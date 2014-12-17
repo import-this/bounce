@@ -1,7 +1,7 @@
 /*global bounce */
 (function(bounce) {
     "use strict";
-    var canvas, endMenu, restartButton, currScore, highScore, game;
+    var canvas, game, endMenu, restartButton, currScore, highScore;
 
     try {
         canvas = document.getElementById('bounce');
@@ -23,7 +23,7 @@
             var levels = document.getElementById('start-menu-items');
 
             // Use event delegation for clicking the <li> tags.
-            levels.addEventListener('click', function(event) {
+            levels.addEventListener('click', function start(event) {
                 var target = event.target,
                     menu;
 
@@ -52,7 +52,7 @@
 
         bounce.play(game, 2);
     } catch (ex) {
-        // TODO: Report the error to the user.
+        document.getElementById('error-msg').style.display = 'block';
         throw ex;
     }
 }(bounce));
