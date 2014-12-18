@@ -267,6 +267,7 @@ function BounceInputDaemon(element, circle) {
     this._mousepos = {x: 0, y: 0};
     this._diff = {dx: 0, dy: 0};
     this._circlepos = {x: 0, y: 0};
+    this._fakeMouseupEvent = {preventDefault: cog.noop, which: 1};
 
     var self = this;
 
@@ -296,6 +297,12 @@ function BounceInputDaemon(element, circle) {
     function mouseover(event) {
         /*jshint validthis:true */
         setDiff(this, event);
+        // Left mouse button not still pressed.
+        if (event.which !== 1) {
+            // Create an articial mouseup event since we lost the original
+            // when the user moved their mouse out of the input element.
+            self._mouseup(self._fakeMouseupEvent);
+        }
     }
 
     this._mousedown = function(event) {
@@ -338,7 +345,7 @@ BounceInputDaemon.prototype.start = function() {
 BounceInputDaemon.prototype.stop = function() {
     // Create an articial mouseup event (to unregister the additional handlers)
     // in case the user restarted the game without releasing the mouse button.
-    this._mouseup({preventDefault: cog.noop, which: 1});
+    this._mouseup(this._fakeMouseupEvent);
     this.element.removeEventListener('mousedown', this._mousedown, false);
     this.element.removeEventListener('mouseup', this._mouseup, false);
     return this;
