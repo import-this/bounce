@@ -933,11 +933,16 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
     };
     this._keydownHandler = function(event) {
         switch (event.which) {
-            case 82:      // r/R: Restart
+            case 83:        // s/S: Start
+                self.start();
+                break;
+            case 82:        // r/R: Restart
                 self.restart();
                 break;
-            case 80:      // p/P - Space: Pause/Resume
-                /*jshint noempty: false */
+            case 81:        // q/Q: Stop
+                self.stop();
+                break;
+            case 80:        // p/P or Space: Pause/Resume
                 /* falls through */
             case 32:
                 if (self._paused) {
@@ -1316,7 +1321,6 @@ function play(game, difficulty, autostart) {
             bouncer = new EasyBouncer(circle, shapes, width, height);
             break;
         case 3:
-            /*jshint noempty: false */
             /* falls through */
         default:    // Default difficulty: Normal.
             bouncer = new NormalBouncer(circle, shapes, width, height);
