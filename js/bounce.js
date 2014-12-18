@@ -249,36 +249,62 @@ BouncePainter.prototype.clearScore = function() {
 /*********************************** Input ***********************************/
 
 /**
- * A user input deamon.
+ * A daemon that captures user input, with Bounce-specific functionality.
  * @param {Element} element - The HTML element that will receive events.
+ * @param {cog.Circle} circle - The Bounce circle.
+ *      The object is never modified inside this daemon.
  * @constructor
  * @augments cog.UserInputDaemon
  */
-function BounceInputDaemon(element) {
+function BounceInputDaemon(element, circle) {
+    // http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
+    // https://developer.mozilla.org/en-US/docs/Web/API/Element.getBoundingClientRect
+    // http://stackoverflow.com/a/11396681/1751037
     cog.UserInputDaemon.call(this);
     this.element = element;
+    this.circle = circle;
     this.mousemoved = false;
-    this._pos = {x: 0, y: 0};
+    this._mousepos = {x: 0, y: 0};
+    this._diff = {dx: 0, dy: 0};
+    this._circlepos = {x: 0, y: 0};
 
     var self = this;
 
-    function mousemove(event) {
-        // http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
-        // https://developer.mozilla.org/en-US/docs/Web/API/Element.getBoundingClientRect
-        // http://stackoverflow.com/a/11396681/1751037
+    function setDiff(element, event) {
         var rect = element.getBoundingClientRect(),
-            pos = self._pos;
+            circle = self.circle,
+            diff = self._diff;
+
+        diff.dx = circle.x - (event.clientX - rect.left);
+        diff.dy = circle.y - (event.clientY - rect.top);
+    }
+
+    function mousemove(event) {
+        /*jshint validthis:true */
+        var rect = this.getBoundingClientRect(),
+            pos = self._mousepos;
 
         pos.x = event.clientX - rect.left;
         pos.y = event.clientY - rect.top;
         self.mousemoved = true;
     }
 
+    /**
+     * If the mouse moves out of the input element and then back in,
+     * get a new diff to prevent the circle from jumping to another spot.
+     */
+    function mouseover(event) {
+        /*jshint validthis:true */
+        setDiff(this, event);
+    }
+
     this._mousedown = function(event) {
         event.preventDefault();
         // Left mouse button pressed.
         if (event.which === 1) {
+            setDiff(this, event);
             element.addEventListener('mousemove', mousemove, false);
+            element.addEventListener('mouseover', mouseover, false);
         }
     };
 
@@ -287,6 +313,7 @@ function BounceInputDaemon(element) {
         // Left mouse button released.
         if (event.which === 1) {
             element.removeEventListener('mousemove', mousemove, false);
+            element.removeEventListener('mouseover', mouseover, false);
         }
     };
 }
@@ -309,36 +336,17 @@ BounceInputDaemon.prototype.start = function() {
  * @return {BounceInputDaemon} this
  */
 BounceInputDaemon.prototype.stop = function() {
+    // Create an articial mouseup event (to unregister the additional handlers)
+    // in case the user restarted the game without releasing the mouse button.
+    this._mouseup({preventDefault: cog.noop, which: 1});
     this.element.removeEventListener('mousedown', this._mousedown, false);
     this.element.removeEventListener('mouseup', this._mouseup, false);
-    // Create an articial mouseup event (to unregister mousemove) in case
-    // the user restarted the game without releasing the mouse button.
-    this._mouseup({preventDefault: cog.noop, which: 1});
     return this;
 };
 
 /**
- * Registers an event handler for an event.
- * @return {BounceInputDaemon} this
- */
-BounceInputDaemon.prototype.on = function(event, handler) {
-    cog.UserInputDaemon.prototype.on.call(this, event, handler);
-    this.element.addEventListener(event, handler, false);
-    return this;
-};
-
-/**
- * Removes an event handler.
- * @return {BounceInputDaemon} this
- */
-BounceInputDaemon.prototype.off = function(event, handler) {
-    cog.UserInputDaemon.prototype.off.call(this, event, handler);
-    this.element.removeEventListener(event, handler, false);
-    return this;
-};
-
-/**
- * Return an object containing the properties `x` and `y`.
+ * Return the mouse position relative to the input element
+ * as an object containing the properties `x` and `y`.
  * This method will clear the mousemoved flag.
  *
  * For performance reasons, this method does not return a new object.
@@ -348,7 +356,26 @@ BounceInputDaemon.prototype.off = function(event, handler) {
  */
 BounceInputDaemon.prototype.getMousePos = function() {
     this.mousemoved = false;
-    return this._pos;
+    return this._mousepos;
+};
+
+/**
+ * Return the hypothetical circle position based on mouse movement
+ * as an object containing the properties `x` and `y`.
+ * This method will clear the mousemoved flag.
+ *
+ * For performance reasons, this method does not return a new object.
+ * Instead, it updates and returns a preallocated one,
+ * so it is a good idea to NOT modify it at all.
+ * @return {Object} The object containing the properties `x` and `y`.
+ */
+BounceInputDaemon.prototype.getCirclePos = function() {
+    var mousepos = this._mousepos, diff = this._diff;
+
+    this._circlepos.x = mousepos.x + diff.dx;
+    this._circlepos.y = mousepos.y + diff.dy;
+    this.mousemoved = false;
+    return this._circlepos;
 };
 
 /*********************** Movement / Collision Detection **********************/
@@ -884,7 +911,7 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
 
     this.painter = painter || makeBouncePainter(canvas, circle, shapes);
     this.inputDaemon = inputDaemon || new BounceInputDaemon(
-        makeInputSurface(canvas));
+        makeInputSurface(canvas), circle);
     this.storageManager = storageManager || new cog.GameStorageManager();
     this.appCacheManager = appCacheManager || new cog.AppCacheManager();
 
@@ -894,7 +921,6 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
 
     this._bouncer = null;
     this._elapsedmillisecs = 0;
-    this._diff = null;
 
     this._originalCoords = [];
     this._saveOriginalPos();
@@ -904,15 +930,6 @@ function Bounce(circle, shapes, canvas, painter, inputDaemon,
     };
     this._focusHandler = function() {
         self.resume();
-    };
-    this._mousedownHandler = function(event) {
-        var rect = this.getBoundingClientRect(),
-            circle = self.circle,
-            x, y;
-
-        x = event.clientX - rect.left;
-        y = event.clientY - rect.top;
-        self._diff = {dx: circle.x - x, dy: circle.y - y};
     };
     this._keydownHandler = function(event) {
         switch (event.which) {
@@ -1064,7 +1081,7 @@ Bounce.prototype._play = function() {
             var self = that,
                 painter = self.painter,
                 bouncer = self._bouncer,
-                dt, pos, diff, score;
+                dt, pos, score;
 
             // Place the rAF before everything to assure as
             // close to 60fps with the setTimeout fallback.
@@ -1077,10 +1094,9 @@ Bounce.prototype._play = function() {
 
                 // No need to redraw the circle if it hasn't moved.
                 if (self.inputDaemon.mousemoved) {
-                    pos = self.inputDaemon.getMousePos();
-                    diff = self._diff;
+                    pos = self.inputDaemon.getCirclePos();
                     painter.clearCircle();
-                    bouncer.moveCircle(pos.x + diff.dx, pos.y + diff.dy);
+                    bouncer.moveCircle(pos.x, pos.y);
                     painter.drawCircle();
                 }
 
@@ -1119,7 +1135,6 @@ Bounce.prototype.start = function() {
     // Pause the game automatically when the player loses focus.
     global.addEventListener('blur', this._blurHandler, false);
     global.addEventListener('focus', this._focusHandler, false);
-    this.inputDaemon.on('mousedown', this._mousedownHandler);
     this.inputDaemon.start();
     this._play();
     this.inputDaemon.trigger('start');
@@ -1138,7 +1153,6 @@ Bounce.prototype.stop = function() {
     this._stopped = true;
 
     this.inputDaemon.stop();
-    this.inputDaemon.off('mousedown', this._mousedownHandler);
     global.removeEventListener('blur', this._blurHandler, false);
     global.removeEventListener('focus', this._focusHandler, false);
     this.saveStats();
