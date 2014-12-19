@@ -818,6 +818,20 @@ function insertAfter(newNode, referenceNode) {
 }
 
 /**
+ * Create an HTML container for future elements.
+ * @param {canvas} canvas - The Bounce main canvas.
+ *      The container will be created after this element.
+ * @return {Element} The new container.
+ */
+function createContainer(canvas) {
+    var container = createElement('div');
+    
+    container.className = 'bounce-container';
+    insertAfter(container, canvas);
+    return container;
+}
+
+/**
  * @param {canvas} canvas - The canvas to apply the styles to.
  * @param {Object} newNode - A configuration object.
  */
@@ -834,7 +848,10 @@ function styleCanvas(canvas, options) {
     style.display = options.display || 'block';
 }
 
-function makeBouncePainter(canvas, circle, shapes) {
+/**
+ *
+ */
+function makeBouncePainter(container, canvas, circle, shapes) {
     var topcanvas, bottomcanvas, pausecanvas, score, options;
 
     // These canvases will be used for the foreground.
@@ -843,6 +860,10 @@ function makeBouncePainter(canvas, circle, shapes) {
     topcanvas = createElement('canvas');
     bottomcanvas = createElement('canvas');
     pausecanvas = createElement('canvas');
+
+    topcanvas.className = 'bounce-top-canvas';
+    bottomcanvas.className = 'bounce-bottom-canvas';
+    pausecanvas.className = 'bounce-pause-canvas';
 
     options = {
         width: canvas.width,
@@ -861,9 +882,9 @@ function makeBouncePainter(canvas, circle, shapes) {
     options.display = 'none';
     styleCanvas(pausecanvas, options);
 
-    insertAfter(topcanvas, canvas);
-    insertAfter(bottomcanvas, topcanvas);
-    insertAfter(pausecanvas, bottomcanvas);
+    container.appendChild(topcanvas);
+    container.appendChild(bottomcanvas);
+    container.appendChild(pausecanvas);
 
     score = new cog.Text({
         x: Math.floor(bottomcanvas.width / 2),
@@ -883,42 +904,46 @@ function makeBouncePainter(canvas, circle, shapes) {
 /**
  *
  */
-function makeInputSurface(canvas) {
+function makeInputSurface(container, canvas) {
     var inputSurface = createElement('canvas');
 
+    inputSurface.className = 'bounce-input-surface';
     styleCanvas(inputSurface, {
         width: canvas.width,
         height: Math.ceil(canvas.height / 2),
         top: Math.floor(canvas.height / 2),
         zIndex: '2'
     });
-    insertAfter(inputSurface, canvas);
+    container.appendChild(inputSurface);
     return inputSurface;
 }
 
 /**
  * The main class of the game.
+ * @param {canvas} canvas -
  * @param {cog.Circle} circle -
  * @param {Array} shapes -
- * @param {canvas} canvas -
  * @param {BouncePainter} [painter=BouncePainter] -
  * @param {BounceInputDaemon} [inputDaemon=BounceInputDaemon] -
  * @param {cog.StorageManager} [storageManager=cog.StorageManager] -
  * @param {cog.AppCacheManager} [appCacheManager=cog.AppCacheManager] -
  */
-function Bounce(circle, shapes, canvas, painter, inputDaemon,
+function Bounce(canvas, circle, shapes, painter, inputDaemon,
                 storageManager, appCacheManager) {
-    var self = this;
+    var self = this,
+        container;
 
     this.width = canvas.width;
     this.height = Math.floor(canvas.height / 2);
-
     this.circle = circle;
     this.shapes = shapes;
 
-    this.painter = painter || makeBouncePainter(canvas, circle, shapes);
+    container = createContainer(canvas);
+
+    this.painter = painter || makeBouncePainter(
+        container, canvas, circle, shapes);
     this.inputDaemon = inputDaemon || new BounceInputDaemon(
-        makeInputSurface(canvas), circle);
+        makeInputSurface(container, canvas), circle);
     this.storageManager = storageManager || new cog.GameStorageManager();
     this.appCacheManager = appCacheManager || new cog.AppCacheManager();
 
@@ -1048,7 +1073,8 @@ Bounce.prototype.draw = function() {
     var self = this;
 
     global.requestAnimationFrame(function() {
-        self.painter.drawBackground()
+        self.painter
+            .drawBackground()
             .drawShapes()
             .drawCircle()
             .drawScore(self.score);
@@ -1298,9 +1324,9 @@ function bounce(canvas) {
         height = Math.floor(canvas.height / 2);
 
     return new Bounce(
+        canvas,
         _createCircle(width, height),
-        _createShapes(width, height),
-        canvas);
+        _createShapes(width, height));
 }
 
 /**
