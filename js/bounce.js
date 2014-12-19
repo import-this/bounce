@@ -825,7 +825,7 @@ function insertAfter(newNode, referenceNode) {
  */
 function createContainer(canvas) {
     var container = createElement('div');
-    
+
     container.className = 'bounce-container';
     insertAfter(container, canvas);
     return container;
@@ -935,6 +935,7 @@ function Bounce(canvas, circle, shapes, painter, inputDaemon,
 
     this.width = canvas.width;
     this.height = Math.floor(canvas.height / 2);
+    this.canvas = canvas;
     this.circle = circle;
     this.shapes = shapes;
 
@@ -1101,6 +1102,37 @@ Bounce.prototype.setup = function(bouncer) {
     this._addKeyShortcuts();
     this.inputDaemon.trigger('setup');
     return this;
+};
+
+/**
+ * Stops the game and performs the final cleanup.
+ * All functionality (objects, event handlers, DOM elements) are removed.
+ * You must not call any other method of the instance after this one.
+ */
+Bounce.prototype.destroy = function() {
+    var container;
+
+    this.stop();
+
+    // Remove event handlers.
+    this._removeKeyShortcuts();
+
+    // Remove HTML elements.
+    container = this.canvas.nextSibling;
+    container.parentNode.removeChild(container);
+
+    // Mark objects for garbage collection.
+    this._blurHandler = this._focusHandler = null;
+    this._keydownHandler = null;
+
+    this._bouncer = null;
+    this._originalCoords = null;
+
+    this.circle = this.shapes = null;
+    this.painter = null;
+    this.inputDaemon = null;
+    this.storageManager = null;
+    this.appCacheManager = null;
 };
 
 /**
