@@ -16,10 +16,8 @@
             canvas.height = window.innerHeight;
         }());
 
-        game = bounce.bounce(canvas).draw();
-
         // TODO: Fix this after creating menu.
-        (function getDifficulty() {
+        /*(function getDifficulty() {
             var levels = document.getElementById('start-menu-items');
 
             // Use event delegation for clicking the <li> tags.
@@ -34,7 +32,9 @@
                     bounce.play(game, +target.tabIndex);
                 }
             }, false);
-        }());
+        }());*/
+
+        game = bounce.bounce(canvas, 2);
 
         game.inputDaemon.on('stop', function showEndMenu() {
             currScore.innerHTML = game.score.toString();
@@ -50,7 +50,7 @@
             game.restart();
         }, false);
 
-        bounce.play(game, 2);
+        bounce.play(game);
     } catch (ex) {
         document.getElementById('error-msg').style.display = 'block';
         throw ex;

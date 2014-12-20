@@ -96,11 +96,11 @@ function BouncePainter(circle, shapes, score, backpainter,
     this._rect = new cog.Rect();
 }
 
-/** @type {string} */
+/** @const {string} */
 BouncePainter._CIRCLE_COLOR = '#FFFF00';
-/** @type {string} */
+/** @const {string} */
 BouncePainter._SHAPE_COLOR = 'rgba(0,122,255,0.7)';
-/** @type {string} */
+/** @const {string} */
 BouncePainter._PAUSE_COLOR = 'rgba(150,150,150,0.8)';
 
 /**
@@ -248,6 +248,12 @@ BouncePainter.prototype.clearScore = function() {
 
 /*********************************** Input ***********************************/
 
+/*
+ * http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
+ * http://developer.mozilla.org/en-US/docs/Web/API/Element.getBoundingClientRect
+ * http://stackoverflow.com/a/11396681/1751037
+ */
+
 /**
  * A daemon that captures user input, with Bounce-specific functionality.
  * @param {Element} element - The HTML element that will receive events.
@@ -257,9 +263,6 @@ BouncePainter.prototype.clearScore = function() {
  * @augments cog.UserInputDaemon
  */
 function BounceInputDaemon(element, circle) {
-    // http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
-    // https://developer.mozilla.org/en-US/docs/Web/API/Element.getBoundingClientRect
-    // http://stackoverflow.com/a/11396681/1751037
     cog.UserInputDaemon.call(this);
     this.element = element;
     this.circle = circle;
@@ -343,27 +346,14 @@ BounceInputDaemon.prototype.start = function() {
  * @return {BounceInputDaemon} this
  */
 BounceInputDaemon.prototype.stop = function() {
+    this.element.removeEventListener('mousedown', this._mousedown, false);
+    this.element.removeEventListener('mouseup', this._mouseup, false);
     // Create an articial mouseup event (to unregister the additional handlers)
     // in case the user restarted the game without releasing the mouse button.
     this._mouseup(this._fakeMouseupEvent);
-    this.element.removeEventListener('mousedown', this._mousedown, false);
-    this.element.removeEventListener('mouseup', this._mouseup, false);
-    return this;
-};
-
-/**
- * Return the mouse position relative to the input element
- * as an object containing the properties `x` and `y`.
- * This method will clear the mousemoved flag.
- *
- * For performance reasons, this method does not return a new object.
- * Instead, it updates and returns a preallocated one,
- * so it is a good idea to NOT modify it at all.
- * @return {Object} The object containing the properties `x` and `y`.
- */
-BounceInputDaemon.prototype.getMousePos = function() {
+    this._mousepos.x = this._mousepos.y = this._diff.x = this._diff.y = 0;
     this.mousemoved = false;
-    return this._mousepos;
+    return this;
 };
 
 /**
@@ -794,8 +784,10 @@ InsaneBouncer.prototype.moveShapes = function(dt) {
 
 /******************************* Game Manager ********************************/
 
-// Avoid window.cancelAnimationFrame for now.
-// https://developer.mozilla.org/en-US/docs/Web/API/Window.cancelAnimationFrame
+/*
+ * Avoid window.cancelAnimationFrame for now.
+ * https://developer.mozilla.org/en-US/docs/Web/API/Window.cancelAnimationFrame
+ */
 
 var document = global.document;
 
@@ -920,26 +912,34 @@ function makeInputSurface(container, canvas) {
 
 /**
  * The main class of the game.
- * @param {canvas} canvas -
- * @param {cog.Circle} circle -
- * @param {Array} shapes -
+ * @param {canvas} canvas - The main canvas to draw the game on.
+ * @param {cog.Circle} circle - The circle of the game.
+ * @param {Array} shapes - The rest of the shapes.
+ * @param {AbstractBouncer} [bouncer=NormalBouncer] -
+ *      The object responsible for the game logic.
  * @param {BouncePainter} [painter=BouncePainter] -
+ *      The object responsible for drawing the elements of the game.
  * @param {BounceInputDaemon} [inputDaemon=BounceInputDaemon] -
+ *      The object responsible for receiving input from the user.
  * @param {cog.StorageManager} [storageManager=cog.StorageManager] -
+ *      The object responsible for saving the game stats.
  * @param {cog.AppCacheManager} [appCacheManager=cog.AppCacheManager] -
+ *      The object responsible for the application cache.
  */
-function Bounce(canvas, circle, shapes, painter, inputDaemon,
+function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
                 storageManager, appCacheManager) {
     var self = this,
-        container;
+        container = createContainer(canvas);
 
     this.width = canvas.width;
     this.height = Math.floor(canvas.height / 2);
+
     this.canvas = canvas;
     this.circle = circle;
     this.shapes = shapes;
 
-    container = createContainer(canvas);
+    this._bouncer = bouncer || new NormalBouncer(
+        this.circle, this.shapes, this.width, this.height);
 
     this.painter = painter || makeBouncePainter(
         container, canvas, circle, shapes);
@@ -948,15 +948,9 @@ function Bounce(canvas, circle, shapes, painter, inputDaemon,
     this.storageManager = storageManager || new cog.GameStorageManager();
     this.appCacheManager = appCacheManager || new cog.AppCacheManager();
 
-    this._stopped = true;
-    this._paused = false;
-    this._ended = false;
-
-    this._bouncer = null;
+    this._state = Bounce._READY;
     this._elapsedmillisecs = 0;
-
     this._originalCoords = [];
-    this._saveOriginalPos();
 
     this._blurHandler = function() {
         self.pause();
@@ -978,11 +972,11 @@ function Bounce(canvas, circle, shapes, painter, inputDaemon,
             case 80:        // p/P or Space: Pause/Resume
                 /* falls through */
             case 32:
-                if (self._paused) {
-                    self.resume();
+                if (self._state === Bounce._RUNNING) {
+                    self.pause();
                 }
                 else {
-                    self.pause();
+                    self.resume();
                 }
                 break;
             default:
@@ -990,14 +984,25 @@ function Bounce(canvas, circle, shapes, painter, inputDaemon,
                 break;
         }
     };
+
+    this._saveOriginalPos();
+    this._draw();
+    this.inputDaemon.start();
+    this.inputDaemon.trigger('create');
+    document.addEventListener('keydown', this._keydownHandler, false);
 }
 
-Object.defineProperty(Bounce.prototype, 'score', {
-    get: function() {
-        // 1 point for half a second.
-        return Math.floor((this._elapsedmillisecs / 1000) * 2);
-    }
-});
+/**
+ * An enumeration of the game states.
+ */
+/** @const {number} */
+Bounce._READY = 0;
+/** @const {number} */
+Bounce._RUNNING = 1;
+/** @const {number} */
+Bounce._PAUSED = 2;
+/** @const {number} */
+Bounce._ENDED = 3;
 
 /**
  * .
@@ -1017,38 +1022,51 @@ Bounce.prototype._saveOriginalPos = function() {
 };
 
 /**
- * .
+ * Draw all the elements of the game.
  */
-Bounce.prototype._repositionShapes = function() {
-    var shapes = this.shapes,
-        circle = this.circle,
-        coordlist = this._originalCoords,
-        i, len, shape, coords;
+Bounce.prototype._draw = function() {
+    var self = this;
 
-    for (i = 0, len = shapes.length; i < len; ++i) {
-        shape = shapes[i];
-        coords = coordlist[i];
-        shape.x = coords.x;
-        shape.y = coords.y;
+    global.requestAnimationFrame(function() {
+        self.painter
+            .drawBackground()
+            .drawShapes()
+            .drawCircle()
+            .drawScore(self.score);
+    });
+};
+
+Object.defineProperty(Bounce.prototype, 'score', {
+    get: function() {
+        // 1 point for half a second.
+        return Math.floor((this._elapsedmillisecs / 1000) * 2);
     }
-    // Fix the circle separately.
-    coords = coordlist[i];
-    circle.x = coords.x;
-    circle.y = coords.y;
-};
+});
 
 /**
- *
+ * Stops the game and performs the final cleanup.
+ * All functionality (objects, event handlers, DOM elements) are removed.
+ * You must not call any other method of the instance after this one.
  */
-Bounce.prototype._addKeyShortcuts = function() {
-    document.addEventListener('keydown', this._keydownHandler, false);
-};
+Bounce.prototype.destroy = function() {
+    var container;
 
-/**
- *
- */
-Bounce.prototype._removeKeyShortcuts = function() {
+    this.stop();
+
+    // Remove event handlers.
+    this.inputDaemon.stop();
     document.removeEventListener('keydown', this._keydownHandler, false);
+
+    // Remove HTML elements.
+    container = this.canvas.nextSibling;
+    container.parentNode.removeChild(container);
+
+    // Mark objects for garbage collection.
+    this.canvas = this.circle = this.shapes =
+        this.painter = this.inputDaemon =
+        this.storageManager = this.appCacheManager =
+        this._bouncer = this._originalCoords =
+        this._blurHandler = this._focusHandler = this._keydownHandler = null;
 };
 
 /**
@@ -1064,75 +1082,6 @@ Bounce.prototype.saveScore = function() {
 Bounce.prototype.saveStats = function() {
     this.saveScore();
     this.storageManager.incTimesPlayed();
-};
-
-/**
- *
- * @return {Bounce} this
- */
-Bounce.prototype.draw = function() {
-    var self = this;
-
-    global.requestAnimationFrame(function() {
-        self.painter
-            .drawBackground()
-            .drawShapes()
-            .drawCircle()
-            .drawScore(self.score);
-    });
-    return this;
-};
-
-/**
- * Performs the basic setup before the game begins.
- * @param {AbstractBouncer} [bouncer=NormalBouncer] -
- * @return {Bounce} this
- */
-Bounce.prototype.setup = function(bouncer) {
-    if (!this._stopped && !this._ended) {
-        return this;
-    }
-    this._stopped = true;
-    this._paused = false;
-    this._ended = false;
-
-    this._elapsedmillisecs = 0;
-    this._bouncer = bouncer || this._bouncer || new NormalBouncer(
-        this.circle, this.shapes, this.width, this.height);
-    this._addKeyShortcuts();
-    this.inputDaemon.trigger('setup');
-    return this;
-};
-
-/**
- * Stops the game and performs the final cleanup.
- * All functionality (objects, event handlers, DOM elements) are removed.
- * You must not call any other method of the instance after this one.
- */
-Bounce.prototype.destroy = function() {
-    var container;
-
-    this.stop();
-
-    // Remove event handlers.
-    this._removeKeyShortcuts();
-
-    // Remove HTML elements.
-    container = this.canvas.nextSibling;
-    container.parentNode.removeChild(container);
-
-    // Mark objects for garbage collection.
-    this._blurHandler = this._focusHandler = null;
-    this._keydownHandler = null;
-
-    this._bouncer = null;
-    this._originalCoords = null;
-
-    this.circle = this.shapes = null;
-    this.painter = null;
-    this.inputDaemon = null;
-    this.storageManager = null;
-    this.appCacheManager = null;
 };
 
 /**
@@ -1155,7 +1104,7 @@ Bounce.prototype._play = function() {
 
             // Place the rAF before everything to assure as
             // close to 60fps with the setTimeout fallback.
-            if (!self._stopped && !self._paused) {
+            if (self._state === Bounce._RUNNING) {
                 global.requestAnimationFrame(animate);
 
                 dt = now - timestamp;
@@ -1197,15 +1146,14 @@ Bounce.prototype._play = function() {
  * @return {Bounce} this
  */
 Bounce.prototype.start = function() {
-    if (!this._stopped || this._ended) {
+    if (this._state !== Bounce._READY) {
         return this;
     }
-    this._stopped = false;
+    this._state = Bounce._RUNNING;
 
     // Pause the game automatically when the player loses focus.
     global.addEventListener('blur', this._blurHandler, false);
     global.addEventListener('focus', this._focusHandler, false);
-    this.inputDaemon.start();
     this._play();
     this.inputDaemon.trigger('start');
     return this;
@@ -1217,16 +1165,14 @@ Bounce.prototype.start = function() {
  * @return {Bounce} this
  */
 Bounce.prototype.stop = function() {
-    if (this._stopped || this._ended) {
+    if (this._state !== Bounce._RUNNING) {
         return this;
     }
-    this._stopped = true;
+    this._state = Bounce._ENDED;
 
-    this.inputDaemon.stop();
     global.removeEventListener('blur', this._blurHandler, false);
     global.removeEventListener('focus', this._focusHandler, false);
     this.saveStats();
-    this._ended = true;
     this.inputDaemon.trigger('stop');
     return this;
 };
@@ -1239,10 +1185,10 @@ Bounce.prototype.stop = function() {
 Bounce.prototype.pause = function() {
     var self = this;
 
-    if (this._paused || this._stopped) {
+    if (this._state !== Bounce._RUNNING) {
         return this;
     }
-    this._paused = true;
+    this._state = Bounce._PAUSED;
 
     global.requestAnimationFrame(function() {
         self.painter.drawPauseScreen();
@@ -1262,10 +1208,10 @@ Bounce.prototype.pause = function() {
 Bounce.prototype.resume = function() {
     var self = this;
 
-    if (!this._paused || this._stopped) {
+    if (this._state !== Bounce._PAUSED) {
         return this;
     }
-    this._paused = false;
+    this._state = Bounce._RUNNING;
 
     global.requestAnimationFrame(function() {
         self.painter.clearPauseScreen();
@@ -1273,6 +1219,27 @@ Bounce.prototype.resume = function() {
     this._play();
     this.inputDaemon.trigger('resume');
     return this;
+};
+
+/**
+ * .
+ */
+Bounce.prototype._repositionShapes = function() {
+    var shapes = this.shapes,
+        circle = this.circle,
+        coordlist = this._originalCoords,
+        i, len, shape, coords;
+
+    for (i = 0, len = shapes.length; i < len; ++i) {
+        shape = shapes[i];
+        coords = coordlist[i];
+        shape.x = coords.x;
+        shape.y = coords.y;
+    }
+    // Fix the circle separately.
+    coords = coordlist[i];
+    circle.x = coords.x;
+    circle.y = coords.y;
 };
 
 /**
@@ -1288,14 +1255,18 @@ Bounce.prototype.restart = function() {
     // of the stop method will take place before being overwritten by the
     // effects of the setup and start method calls.
     global.requestAnimationFrame(function() {
-        self._removeKeyShortcuts();
         self.painter.clear();
         self._repositionShapes();
-        self.draw();
-        self.setup();
+        self._elapsedmillisecs = 0;
+        self.painter
+            .drawShapes()
+            .drawCircle()
+            .drawScore(self.score);
+        self._state = Bounce._READY;
+        self.inputDaemon.restart();
+        self.inputDaemon.trigger('restart');
         self.start();
     });
-    this.inputDaemon.trigger('restart');
     return this;
 };
 
@@ -1348,36 +1319,17 @@ function _createShapes(width, height) {
 
 /**
  * Convenience function. Creates a new game to play.
- * @param {canvas} canvas - The canvas to draw the game on.
+ * @param {canvas} canvas - The main canvas to draw the game on.
+ * @param {number} [difficulty=3] - The difficulty of the game.
  * @return {Bounce} The new game.
  */
-function bounce(canvas) {
+function bounce(canvas, difficulty) {
     var width = canvas.width,
-        height = Math.floor(canvas.height / 2);
-
-    return new Bounce(
-        canvas,
-        _createCircle(width, height),
-        _createShapes(width, height));
-}
-
-/**
- * Convenience function. Setups the game specified.
- * @param {Bounce} game - A bounce game instance.
- * @param {number} [difficulty=3] - The difficulty of the game.
- * @param {boolean} [autostart=false] - If true, the game will start
- *      immediately. If false, the game will wait for a click by the user.
- */
-function play(game, difficulty, autostart) {
-    var circle = game.circle,
-        shapes = game.shapes,
-        width = game.width,
-        height = game.height,
+        height = Math.floor(canvas.height / 2),
+        circle = _createCircle(width, height),
+        shapes = _createShapes(width, height),
         bouncer;
 
-    if (!difficulty) {
-        difficulty = game.storageManager.getDifficulty();
-    }
     switch (difficulty) {
         case 1:
             bouncer = new DumbBouncer(circle, shapes, width, height);
@@ -1398,15 +1350,26 @@ function play(game, difficulty, autostart) {
             break;
     }
 
-    game.setup(bouncer);
+    return new Bounce(canvas, circle, shapes, bouncer);
+}
+
+/**
+ * Convenience function. Starts the game specified.
+ * @param {Bounce} game - A bounce game instance.
+ * @param {boolean} [autostart=false] - If true, start the game immediately.
+ *      If false, wait for the player to click before starting the game.
+ */
+function play(game, autostart) {
+    var container;
+
     if (autostart) {
         game.start();
     } else {
-        // Wait for the player to click before starting the game.
-        document.addEventListener('mousedown', function clickHandler(event) {
+        container = game.canvas.parentNode;
+        container.addEventListener('mousedown', function clickHandler(event) {
             // Left mouse button pressed.
             if (event.which === 1) {
-                document.removeEventListener('mousedown', clickHandler, false);
+                this.removeEventListener('mousedown', clickHandler, false);
                 game.start();
             }
         }, false);
