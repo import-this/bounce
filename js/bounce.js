@@ -789,7 +789,8 @@ InsaneBouncer.prototype.moveShapes = function(dt) {
  * https://developer.mozilla.org/en-US/docs/Web/API/Window.cancelAnimationFrame
  */
 
-var document = global.document;
+var document = global.document,
+    requestAnimationFrame = global.requestAnimationFrame;
 
 /**
  * @param {string} tagName -
@@ -952,44 +953,10 @@ function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
     this._elapsedmillisecs = 0;
     this._originalCoords = [];
 
-    this._blurHandler = function() {
-        self.pause();
-    };
-    this._focusHandler = function() {
-        self.resume();
-    };
-    this._keydownHandler = function(event) {
-        switch (event.which) {
-            case 83:        // s/S: Start
-                self.start();
-                break;
-            case 82:        // r/R: Restart
-                self.restart();
-                break;
-            case 81:        // q/Q: Stop
-                self.stop();
-                break;
-            case 80:        // p/P or Space: Pause/Resume
-                /* falls through */
-            case 32:
-                if (self._state === Bounce._RUNNING) {
-                    self.pause();
-                }
-                else {
-                    self.resume();
-                }
-                break;
-            default:
-                // Do nothing.
-                break;
-        }
-    };
-
     this._saveOriginalPos();
     this._draw();
     this.inputDaemon.start();
     this.inputDaemon.trigger('create');
-    document.addEventListener('keydown', this._keydownHandler, false);
 }
 
 /**
@@ -1027,7 +994,7 @@ Bounce.prototype._saveOriginalPos = function() {
 Bounce.prototype._draw = function() {
     var self = this;
 
-    global.requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
         self.painter
             .drawBackground()
             .drawShapes()
@@ -1045,7 +1012,7 @@ Object.defineProperty(Bounce.prototype, 'score', {
 
 /**
  * Stops the game and performs the final cleanup.
- * All functionality (objects, event handlers, DOM elements) are removed.
+ * All functionality (objects, event handlers, DOM elements) is removed.
  * You must not call any other method of the instance after this one.
  */
 Bounce.prototype.destroy = function() {
@@ -1055,7 +1022,6 @@ Bounce.prototype.destroy = function() {
 
     // Remove event handlers.
     this.inputDaemon.stop();
-    document.removeEventListener('keydown', this._keydownHandler, false);
 
     // Remove HTML elements.
     container = this.canvas.nextSibling;
@@ -1065,8 +1031,7 @@ Bounce.prototype.destroy = function() {
     this.canvas = this.circle = this.shapes =
         this.painter = this.inputDaemon =
         this.storageManager = this.appCacheManager =
-        this._bouncer = this._originalCoords =
-        this._blurHandler = this._focusHandler = this._keydownHandler = null;
+        this._bouncer = this._originalCoords = null;
 };
 
 /**
@@ -1093,7 +1058,7 @@ Bounce.prototype._play = function() {
 
     // Wait for the browser to get ready before starting.
     // Added bonus: We get an accurate initial timestamp.
-    global.requestAnimationFrame(function(timestamp) {
+    requestAnimationFrame(function(timestamp) {
         var prevscore = that.score;
 
         (function animate(now) {
@@ -1105,7 +1070,7 @@ Bounce.prototype._play = function() {
             // Place the rAF before everything to assure as
             // close to 60fps with the setTimeout fallback.
             if (self._state === Bounce._RUNNING) {
-                global.requestAnimationFrame(animate);
+                requestAnimationFrame(animate);
 
                 dt = now - timestamp;
                 self._elapsedmillisecs += dt;
@@ -1151,9 +1116,6 @@ Bounce.prototype.start = function() {
     }
     this._state = Bounce._RUNNING;
 
-    // Pause the game automatically when the player loses focus.
-    global.addEventListener('blur', this._blurHandler, false);
-    global.addEventListener('focus', this._focusHandler, false);
     this._play();
     this.inputDaemon.trigger('start');
     return this;
@@ -1170,8 +1132,6 @@ Bounce.prototype.stop = function() {
     }
     this._state = Bounce._ENDED;
 
-    global.removeEventListener('blur', this._blurHandler, false);
-    global.removeEventListener('focus', this._focusHandler, false);
     this.saveStats();
     this.inputDaemon.trigger('stop');
     return this;
@@ -1190,7 +1150,7 @@ Bounce.prototype.pause = function() {
     }
     this._state = Bounce._PAUSED;
 
-    global.requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
         self.painter.drawPauseScreen();
     });
     // Anything can happen to the system while the game is paused. Save the
@@ -1213,7 +1173,7 @@ Bounce.prototype.resume = function() {
     }
     this._state = Bounce._RUNNING;
 
-    global.requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
         self.painter.clearPauseScreen();
     });
     this._play();
@@ -1254,7 +1214,7 @@ Bounce.prototype.restart = function() {
     // A call to requestAnimationFrame will make sure that all the effects
     // of the stop method will take place before being overwritten by the
     // effects of the setup and start method calls.
-    global.requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
         self.painter.clear();
         self._repositionShapes();
         self._elapsedmillisecs = 0;

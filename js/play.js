@@ -1,7 +1,7 @@
 /*global bounce */
 (function(bounce) {
     "use strict";
-    var canvas, game, endMenu, restartButton, currScore, highScore;
+    var canvas, game, endMenu, restartButton, currScore, highScore, isrunning;
 
     try {
         canvas = document.getElementById('bounce');
@@ -48,6 +48,42 @@
 
         restartButton.addEventListener('click', function restart() {
             game.restart();
+        }, false);
+
+        // Pause the game automatically when the player loses focus.
+        window.addEventListener('blur', function() {
+            game.pause();
+        }, false);
+        window.addEventListener('focus', function() {
+            game.resume();
+        }, false);
+
+        // Keyboard shortcuts
+        isrunning = true;
+        document.addEventListener('keydown', function(event) {
+            switch (event.which) {
+                case 82:        // r/R: Restart
+                    game.restart();
+                    break;
+                case 81:        // q/Q: Stop
+                    game.stop();
+                    break;
+                case 80:        // p/P or Space: Pause/Resume
+                    /* falls through */
+                case 32:
+                    if (isrunning) {
+                        isrunning = false;
+                        game.pause();
+                    }
+                    else {
+                        isrunning = true;
+                        game.resume();
+                    }
+                    break;
+                default:
+                    // Do nothing.
+                    break;
+            }
         }, false);
 
         bounce.play(game);
