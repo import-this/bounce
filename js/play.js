@@ -1,23 +1,54 @@
 /*global bounce */
 (function(bounce) {
     "use strict";
-    var canvas, game, endMenu, restartButton, currScore, highScore, isrunning;
+    var game, canvas,
+        startMenu, endMenu,
+        startButton, restartButton,
+        currScore, bestScore,
+        isrunning;
+
+    function newGame() {
+        var game = bounce.bounce(canvas, 2);
+
+        game.inputDaemon.on('stop', function showEndMenu() {
+            currScore.innerHTML = game.score.toString();
+            bestScore.innerHTML = game.storageManager.getHighScore();
+            endMenu.style.display = 'table';
+        });
+        game.inputDaemon.on('restart', function hideEndMenu() {
+            endMenu.style.display = 'none';
+        });
+
+        return game;
+    }
+
+    /*
+     * Make the canvas cover the whole window.
+     */
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
 
     try {
         canvas = document.getElementById('bounce');
-        endMenu = document.getElementById('end-menu'),
-        currScore = document.getElementById('curr-score'),
-        highScore = document.getElementById('high-score'),
+        startMenu = document.getElementById('start-menu');
+        endMenu = document.getElementById('end-menu');
+        currScore = document.getElementById('curr-score');
+        bestScore = document.getElementById('best-score');
+        startButton = document.getElementById('start-button');
         restartButton = document.getElementById('restart-button');
 
-        // Make the canvas cover the whole window.
-        (function fixSize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }());
+        resizeCanvas();
+        /*window.addEventListener('resize', function resize() {
+            resizeCanvas();
+            game.destroy();
+            game = newGame();
+            bounce.play(game);
+        }, false);*/
 
         // TODO: Fix this after creating menu.
-        /*(function getDifficulty() {
+        /*function getDifficulty() {
             var levels = document.getElementById('start-menu-items');
 
             // Use event delegation for clicking the <li> tags.
@@ -32,63 +63,56 @@
                     bounce.play(game, +target.tabIndex);
                 }
             }, false);
-        }());*/
+        }*/
 
-        game = bounce.bounce(canvas, 2);
+        game = newGame();
 
-        game.inputDaemon.on('stop', function showEndMenu() {
-            currScore.innerHTML = game.score.toString();
-            highScore.innerHTML = game.storageManager.getHighScore();
-            endMenu.style.display = 'block';
-        });
+        startButton.addEventListener('click', function start() {
+            // Pause the game automatically when the player loses focus.
+            window.addEventListener('blur', function() {
+                game.pause();
+            }, false);
+            window.addEventListener('focus', function() {
+                game.resume();
+            }, false);
 
-        game.inputDaemon.on('restart', function hideEndMenu() {
-            endMenu.style.display = 'none';
-        });
+            // Keyboard shortcuts
+            isrunning = true;
+            document.addEventListener('keydown', function(event) {
+                switch (event.which) {
+                    case 82:        // r/R: Restart
+                        game.restart();
+                        break;
+                    case 81:        // q/Q: Stop
+                        game.stop();
+                        break;
+                    case 80:        // p/P or Space: Pause/Resume
+                        /* falls through */
+                    case 32:
+                        if (isrunning) {
+                            isrunning = false;
+                            game.pause();
+                        }
+                        else {
+                            isrunning = true;
+                            game.resume();
+                        }
+                        break;
+                    default:
+                        // Do nothing.
+                        break;
+                }
+            }, false);
+
+            startMenu.style.display = 'none';
+            bounce.play(game);
+        }, false);
 
         restartButton.addEventListener('click', function restart() {
             game.restart();
         }, false);
-
-        // Pause the game automatically when the player loses focus.
-        window.addEventListener('blur', function() {
-            game.pause();
-        }, false);
-        window.addEventListener('focus', function() {
-            game.resume();
-        }, false);
-
-        // Keyboard shortcuts
-        isrunning = true;
-        document.addEventListener('keydown', function(event) {
-            switch (event.which) {
-                case 82:        // r/R: Restart
-                    game.restart();
-                    break;
-                case 81:        // q/Q: Stop
-                    game.stop();
-                    break;
-                case 80:        // p/P or Space: Pause/Resume
-                    /* falls through */
-                case 32:
-                    if (isrunning) {
-                        isrunning = false;
-                        game.pause();
-                    }
-                    else {
-                        isrunning = true;
-                        game.resume();
-                    }
-                    break;
-                default:
-                    // Do nothing.
-                    break;
-            }
-        }, false);
-
-        bounce.play(game);
     } catch (ex) {
-        document.getElementById('error-msg').style.display = 'block';
+        document.getElementById('error-msg').style.display = 'table';
         throw ex;
     }
 }(bounce));

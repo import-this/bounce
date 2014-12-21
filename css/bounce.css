@@ -16,18 +16,73 @@ html, body {
 canvas {
 	display: block;
 }
-#start-menu, #end-menu, #error-msg {
+
+/*
+ * http://stackoverflow.com/questions/396145/how-to-vertically-center-a-div-for-all-browsers
+ */
+.menu, .msg {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	display: table;
 	position: fixed;
 	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
 	z-index: 3;
-	background-color: black;
-	color: white;
+	background-color: #bbb;
+	opacity: 0.9;
+	color: #111;
 	text-align: center;
 	font-size: large;
 }
-#start-menu-items {
-	list-style-type: none;
+.middle {
+	display: table-cell;
+	vertical-align: middle;
+}
+.middle table {
+	display: inline-block;
+}
+#controls, #scores {
+	display: inline-block;
 }
 #end-menu, #error-msg {
 	display: none;
+}
+#end-menu {
+	opacity: 0.8;
+	background-color: #ccc;
+}
+
+ol {
+	list-style-type: none;
+}
+
+button {
+	background: #1c7dbd;
+	background: -webkit-gradient(linear, left top, left bottom, from(#3497d9), to(#1c7dbd));
+	background: -webkit-linear-gradient(top, #3497d9, #1c7dbd);
+	background: -moz-linear-gradient(top, #3497d9, #1c7dbd);
+	background: -ms-linear-gradient(top, #3497d9, #1c7dbd);
+	background: -o-linear-gradient(top, #3497d9, #1c7dbd);
+	padding: 5.5px 11px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	-webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+	-moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+	box-shadow: rgba(0,0,0,1) 0 1px 0;
+	text-shadow: rgba(0,0,0,.4) 0 1px 0;
+	color: white;
+	font-size: 14px;
+	text-decoration: none;
+	vertical-align: middle;
+}
+button:hover {
+	background: #257eba;
+	color: #ffffff;
+}
+button:active {
+	background: #2e7cb0;
 }
