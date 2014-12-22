@@ -612,7 +612,7 @@ DumbBouncer.prototype.isOutOfBounds = returnFalse;
  * @augments Bouncer
  */
 function EasyBouncer(circle, shapes, width, height) {
-    var speed = 0.00035 * Math.round((width+height) / 2), i, len;
+    var speed = 0.00045 * Math.round((width+height) / 2), i, len;
 
     Bouncer.call(this, circle, shapes, width, height);
 
@@ -929,8 +929,7 @@ function makeInputSurface(container, canvas) {
  */
 function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
                 storageManager, appCacheManager) {
-    var self = this,
-        container = createContainer(canvas);
+    var container = createContainer(canvas);
 
     this.width = canvas.width;
     this.height = Math.floor(canvas.height / 2);
@@ -1005,8 +1004,8 @@ Bounce.prototype._draw = function() {
 
 Object.defineProperty(Bounce.prototype, 'score', {
     get: function() {
-        // 1 point for half a second.
-        return Math.floor((this._elapsedmillisecs / 1000) * 2);
+        // 5 points per second.
+        return Math.floor((this._elapsedmillisecs / 1000) * 5);
     }
 });
 
@@ -1247,9 +1246,11 @@ function _createCircle(width, height) {
  * Create 2 squares and 2 rectangles proportional to the dimensions specified.
  */
 function _createShapes(width, height) {
-    var squarewidth = Math.floor(0.15 * Math.round((width + height)/2)),
-        rectwidth = Math.floor(0.225 * Math.round(0.8*width + 0.2*height)),
-        rectheight = Math.floor(0.1 * Math.round(0.2*width + 0.8*height));
+    var squarewidth = Math.floor(0.16 * Math.round((width + height)/2)),
+        rectwidth = Math.floor(0.24 * Math.round(0.8*width + 0.2*height)),
+        rectheight = Math.floor(0.1 * Math.round(0.2*width + 0.8*height)),
+        rect2width = Math.floor(0.8 * rectwidth),
+        rect2height = Math.floor(1.2 * rectheight);
 
     return [
         new cog.Square({
@@ -1269,10 +1270,10 @@ function _createShapes(width, height) {
             height: rectheight
         }),
         new cog.Rect({
-            x: width - Math.floor(rectwidth * 0.8),
-            y: height - Math.floor(rectheight * 1.2),
-            width: Math.floor(rectwidth * 0.8),
-            height: Math.floor(rectheight * 1.2)
+            x: width - rect2width,
+            y: height - rect2height,
+            width: rect2width,
+            height: rect2height
         })
     ];
 }
