@@ -1,35 +1,56 @@
 /*global bounce */
 (function(bounce) {
     "use strict";
-    var game, canvas,
+    var game, gameContainer, canvas,
         startMenu, endMenu,
         startButton, restartButton,
         currScore, bestScore,
         isrunning;
 
-    function newGame() {
-        var game = bounce.bounce(canvas, 2);
-
-        game.inputDaemon.on('stop', function showEndMenu() {
-            currScore.innerHTML = game.score.toString();
-            bestScore.innerHTML = game.storageManager.getHighScore();
-            endMenu.style.display = 'table';
-        });
-        game.inputDaemon.on('restart', function hideEndMenu() {
-            endMenu.style.display = 'none';
-        });
-
-        return game;
-    }
-
-    /*
-     * Make the canvas cover the whole window.
+    /**
+     * Makes the canvas specified cover the whole window.
      */
-    function resizeCanvas() {
+    function fitCanvas(canvas) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
 
+    function showEndMenu() {
+        currScore.innerHTML = game.score.toString();
+        bestScore.innerHTML = game.storageManager.getHighScore();
+        endMenu.style.display = 'table';
+    }
+
+    function hideEndMenu() {
+        endMenu.style.display = 'none';
+    }
+
+    /**
+     * Creates and returns a new game.
+     */
+    function newGame(canvas) {
+        var game = bounce.bounce(canvas, 2);
+        game.inputDaemon.on('stop', showEndMenu);
+        game.inputDaemon.on('restart', hideEndMenu);
+        return game;
+    }
+
+    /**
+     * Starts the game when the user has pressed the left mouse button.
+     */
+    function startOnInput(event) {
+        /*jshint validthis:true */
+        // Left mouse button pressed.
+        if (event.which === 1) {
+            event.preventDefault();
+            this.removeEventListener('mousedown', startOnInput, false);
+            game.start();
+        }
+    }
+
+    // Global exception handler.
+    // Note that this does not cathc exceptions from event handlers
+    // (since these are executed in a separate context).
     try {
         canvas = document.getElementById('bounce');
         startMenu = document.getElementById('start-menu');
@@ -38,36 +59,42 @@
         bestScore = document.getElementById('best-score');
         startButton = document.getElementById('start-button');
         restartButton = document.getElementById('restart-button');
+        gameContainer = canvas.parentNode;
 
-        resizeCanvas();
-        /*window.addEventListener('resize', function resize() {
-            resizeCanvas();
+        fitCanvas(canvas);
+        game = newGame(canvas);
+
+        window.addEventListener('resize', function resize() {
+            // Make sure a game is already created when this handler is called.
+            fitCanvas(canvas);
+            // Perfoming an actual resize is meaningless for this fast-paced
+            // game (and a lot of work, too), so simply create a brand-new one.
             game.destroy();
-            game = newGame();
-            bounce.play(game);
-        }, false);*/
+            game = newGame(canvas);
+            // addEventListener discards potential duplicates.
+            gameContainer.addEventListener('mousedown', startOnInput, false);
+        }, false);
 
-        // TODO: Fix this after creating menu.
+        // TODO: Decide if this will be used eventually.
         /*function getDifficulty() {
             var levels = document.getElementById('start-menu-items');
 
             // Use event delegation for clicking the <li> tags.
             levels.addEventListener('click', function start(event) {
-                var target = event.target,
-                    menu;
-
                 // NOTE: If the menu changes, the check may have to change, too.
-                if (target.nodeName === 'LI') {
-                    menu = document.getElementById('start-menu');
-                    menu.style.display = 'none';
-                    bounce.play(game, +target.tabIndex);
+                if (event.target.nodeName === 'LI') {
+                    startMenu.style.display = 'none';
+                    // +event.target.tabIndex
+                    play(game, canvas.parentNode);
                 }
             }, false);
         }*/
 
-        game = newGame();
+        // Remember that the user will see the start button only once.
+        startButton.addEventListener('click', function start(event) {
+            this.removeEventListener('click', start, false);
+            event.preventDefault();
 
-        startButton.addEventListener('click', function start() {
             // Pause the game automatically when the player loses focus.
             window.addEventListener('blur', function() {
                 game.pause();
@@ -105,7 +132,7 @@
             }, false);
 
             startMenu.style.display = 'none';
-            bounce.play(game);
+            gameContainer.addEventListener('mousedown', startOnInput, false);
         }, false);
 
         restartButton.addEventListener('click', function restart() {

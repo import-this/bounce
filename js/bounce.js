@@ -1317,8 +1317,10 @@ function bounce(canvas, difficulty) {
 /**
  * Convenience function. Starts the game specified.
  * @param {Bounce} game - A bounce game instance.
- * @param {boolean} [autostart=false] - If true, start the game immediately.
- *      If false, wait for the player to click before starting the game.
+ * @param {boolean} [autostart=false] - If true, starts the game immediately.
+ *      If false, waits for the player to press the left mouse button before
+ *      starting the game. The mouse button event is bound to the parent of
+ *      the main canvas of the game.
  */
 function play(game, autostart) {
     var container;
@@ -1327,10 +1329,11 @@ function play(game, autostart) {
         game.start();
     } else {
         container = game.canvas.parentNode;
-        container.addEventListener('mousedown', function clickHandler(event) {
+        container.addEventListener('mousedown', function mousedown(event) {
             // Left mouse button pressed.
             if (event.which === 1) {
-                this.removeEventListener('mousedown', clickHandler, false);
+                event.preventDefault();
+                this.removeEventListener('mousedown', mousedown, false);
                 game.start();
             }
         }, false);
