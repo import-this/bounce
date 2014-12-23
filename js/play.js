@@ -4,8 +4,7 @@
     var game, gameContainer, canvas,
         startMenu, endMenu,
         startButton, restartButton,
-        currScore, bestScore,
-        isrunning;
+        currScore, bestScore;
 
     /**
      * Makes the canvas specified cover the whole window.
@@ -22,6 +21,7 @@
     }
 
     function hideEndMenu() {
+        gameContainer.addEventListener('mousedown', startOnInput, false);
         endMenu.style.display = 'none';
     }
 
@@ -31,12 +31,12 @@
     function newGame(canvas) {
         var game = bounce.bounce(canvas, 2);
         game.inputDaemon.on('stop', showEndMenu);
-        game.inputDaemon.on('restart', hideEndMenu);
+        game.inputDaemon.on('reset', hideEndMenu);
         return game;
     }
 
     /**
-     * Starts the game when the user has pressed the left mouse button.
+     * Starts the game when the user presses the left mouse button.
      */
     function startOnInput(event) {
         /*jshint validthis:true */
@@ -49,7 +49,7 @@
     }
 
     // Global exception handler.
-    // Note that this does not cathc exceptions from event handlers
+    // Note that this does not catch exceptions from event handlers
     // (since these are executed in a separate context).
     try {
         canvas = document.getElementById('bounce');
@@ -104,11 +104,10 @@
             }, false);
 
             // Keyboard shortcuts
-            isrunning = true;
             document.addEventListener('keydown', function(event) {
                 switch (event.which) {
-                    case 82:        // r/R: Restart
-                        game.restart();
+                    case 82:        // r/R: Restart (Reset)
+                        game.reset();
                         break;
                     case 81:        // q/Q: Stop
                         game.stop();
@@ -116,14 +115,7 @@
                     case 80:        // p/P or Space: Pause/Resume
                         /* falls through */
                     case 32:
-                        if (isrunning) {
-                            isrunning = false;
-                            game.pause();
-                        }
-                        else {
-                            isrunning = true;
-                            game.resume();
-                        }
+                        game.pauseResume();
                         break;
                     default:
                         // Do nothing.
@@ -136,7 +128,7 @@
         }, false);
 
         restartButton.addEventListener('click', function restart() {
-            game.restart();
+            game.reset();
         }, false);
     } catch (ex) {
         document.getElementById('error-msg').style.display = 'table';
