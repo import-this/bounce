@@ -1107,45 +1107,45 @@ Bounce.prototype._play = function() {
 /**
  * Starts the game.
  * This method has no effect if the game has already started or ended.
- * @return {Bounce} this
+ * @return {boolean} true if the game was successfully started.
  */
 Bounce.prototype.start = function() {
     if (this._state !== Bounce._READY) {
-        return this;
+        return false;
     }
     this._state = Bounce._RUNNING;
 
     this._play();
     this.inputDaemon.trigger('start');
-    return this;
+    return true;
 };
 
 /**
  * Stops the game.
  * This method has no effect if the game has already stopped or ended.
- * @return {Bounce} this
+ * @return {boolean} true if the game was successfully stopped.
  */
 Bounce.prototype.stop = function() {
     if (this._state !== Bounce._RUNNING) {
-        return this;
+        return false;
     }
     this._state = Bounce._ENDED;
 
     this.saveStats();
     this.inputDaemon.trigger('stop');
-    return this;
+    return true;
 };
 
 /**
  * Pauses the game.
  * This method has no effect if the game is already paused or stopped.
- * @return {Bounce} this
+ * @return {boolean} true if the game was successfully paused.
  */
 Bounce.prototype.pause = function() {
     var self = this;
 
     if (this._state !== Bounce._RUNNING) {
-        return this;
+        return false;
     }
     this._state = Bounce._PAUSED;
 
@@ -1156,19 +1156,19 @@ Bounce.prototype.pause = function() {
     // score just in case. The player wouldn't want to lose a new high score.
     this.saveScore();
     this.inputDaemon.trigger('pause');
-    return this;
+    return true;
 };
 
 /**
  * Resumes the game.
  * This method has no effect if the game is already resumed or stopped.
- * @return {Bounce} this
+ * @return {boolean} true if the game was successfully resumed.
  */
 Bounce.prototype.resume = function() {
     var self = this;
 
     if (this._state !== Bounce._PAUSED) {
-        return this;
+        return false;
     }
     this._state = Bounce._RUNNING;
 
@@ -1177,7 +1177,19 @@ Bounce.prototype.resume = function() {
     });
     this._play();
     this.inputDaemon.trigger('resume');
-    return this;
+    return true;
+};
+
+/**
+ * Pauses or resumes the game according to its current state.
+ * This method has no effect if the game has not started or has already stopped.
+ * @return {boolean} true if the game was successfully paused or resumed.
+ */
+Bounce.prototype.pauseResume = function() {
+    if (this.pause()) {
+        return true;
+    }
+    return this.resume();
 };
 
 /**
@@ -1201,14 +1213,9 @@ Bounce.prototype._repositionShapes = function() {
     circle.y = coords.y;
 };
 
-/**
- * Restarts the game.
- * The game can be restarted at any time.
- * @return {Bounce} this
- */
-Bounce.prototype.restart = function() {
+Bounce.prototype._reset = function(event, autostart) {
     var self = this;
-
+    
     this.stop();
     // A call to requestAnimationFrame will make sure that all the effects
     // of the stop method will take place before being overwritten by the
@@ -1221,12 +1228,41 @@ Bounce.prototype.restart = function() {
             .drawShapes()
             .drawCircle()
             .drawScore(self.score);
-        self._state = Bounce._READY;
+        self._state = Bounce._READY;    // _state should change in here.
         self.inputDaemon.restart();
-        self.inputDaemon.trigger('restart');
-        self.start();
+        self.inputDaemon.trigger(event);
+        if (autostart) {
+            self.start();
+        }
     });
-    return this;
+};
+
+/**
+ * Restarts the game.
+ * The game can be restarted at any time (in contrast to other methods).
+ * @return {boolean} always returns true.
+ *      A value is returned for consistency with the other methods.
+ */
+Bounce.prototype.restart = function() {
+    // Small perf improvement. Do nothing if the game is ready to start.
+    if (this._state === Bounce._READY) {
+        this.inputDaemon.trigger('restart');
+        return true;
+    }
+    this._reset('restart', true);
+    return true;
+};
+
+/**
+ * Resets the game.
+ * After resetting, the game behaves as if it was just constructed.
+ * The game can be reset at any time (in contrast to other methods).
+ * @return {boolean} always returns true.
+ *      A value is returned for consistency with the other methods.
+ */
+Bounce.prototype.reset = function() {
+    this._reset('reset');
+    return true;
 };
 
 /********************************* Public API *********************************/
