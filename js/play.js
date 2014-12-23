@@ -4,7 +4,8 @@
     var game, gameContainer, canvas,
         startMenu, endMenu,
         startButton, restartButton,
-        currScore, bestScore;
+        currScore, bestScore,
+        timesPlayed, totalTimesPlayed;
 
     /**
      * Makes the canvas specified cover the whole window.
@@ -17,6 +18,8 @@
     function showEndMenu() {
         currScore.innerHTML = game.score.toString();
         bestScore.innerHTML = game.storageManager.getHighScore();
+        timesPlayed.innerHTML = game.storageManager.getTimesPlayed();
+        totalTimesPlayed.innerHTML = game.storageManager.getTotalTimesPlayed();
         endMenu.style.display = 'table';
     }
 
@@ -59,6 +62,8 @@
         bestScore = document.getElementById('best-score');
         startButton = document.getElementById('start-button');
         restartButton = document.getElementById('restart-button');
+        timesPlayed = document.getElementById('times');
+        totalTimesPlayed = document.getElementById('total-times');
         gameContainer = canvas.parentNode;
 
         fitCanvas(canvas);
