@@ -61,8 +61,9 @@ function returnFalse() {
  */
 
 /**
- * Note that there is no easy and accurate way of finding the height of the
- * text, so we basically use a factor of width as a simple hack.
+ *
+ * Note that there is no easy and accurate way of finding the height of some
+ * text, so we basically use a factor of width or some other simple hack.
  * @param
  * @param
  * @param
@@ -71,19 +72,17 @@ function returnFalse() {
  * @param
  * @constructor
  */
-function BouncePainter(circle, shapes, backpainter, toppainter,
-                       bottompainter, pausepainter) {
+function BouncePainter(circle, shapes, backpainter, forepainter, pausepainter) {
     var i, len;
 
-    this.width = toppainter.width;
-    this.height = toppainter.height;
+    this.width = forepainter.width;
+    this.height = forepainter.height;
 
     this._circle = circle;
     this._shapes = shapes;
 
     this._backpainter = backpainter;
-    this._toppainter = toppainter;
-    this._bottompainter = bottompainter;
+    this._forepainter = forepainter;
     this._pausepainter = pausepainter;
 
     circle.options.fillStyle = BouncePainter._CIRCLE_COLOR;
@@ -93,8 +92,8 @@ function BouncePainter(circle, shapes, backpainter, toppainter,
 
     this._score = new cog.Text({
         text: '',
-        x: Math.floor(bottompainter.width / 2),
-        y: Math.floor(bottompainter.height / 2),
+        x: Math.floor(forepainter.width / 2),
+        y: 3 * Math.floor(forepainter.height / 4),
         font: 50 + 'pt Calibri',
         textAlign: 'center',
         textBaseline: 'middle',
@@ -103,7 +102,7 @@ function BouncePainter(circle, shapes, backpainter, toppainter,
     this._highScore = new cog.Text({
         text: '',
         x: 0,                           // Dummy value.
-        y: bottompainter.height - 40,
+        y: forepainter.height - 40,
         font: 40 + 'pt Calibri',
         textAlign: 'center',
         textBaseline: 'middle',
@@ -132,12 +131,11 @@ BouncePainter.prototype.draw = function(score, highScore) {
 };
 
 /**
- * Clears the entire canvas (top and bottom).
+ * Clears the entire canvas (but not the background).
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.clear = function() {
-    this._toppainter.clear();
-    this._bottompainter.clear();
+    this._forepainter.clear();
     return this;
 };
 
@@ -151,13 +149,13 @@ BouncePainter.prototype.drawBackground = function() {
 
     rect.x = 0;
     rect.width = this.width;
-    rect.height = this.height;
+    rect.height = Math.floor(this.height / 2);
 
     rect.y = 0;
     rect.options.fillStyle = '#383838';
     painter.drawRect(rect);
 
-    rect.y = this.height;
+    rect.y = rect.height;
     rect.options.fillStyle = '#D8D8D8';
     painter.drawRect(rect);
 
@@ -174,7 +172,7 @@ BouncePainter.prototype.drawPauseScreen = function() {
     rect.x = 0;
     rect.y = 0;
     rect.width = this.width;
-    rect.height = this.height * 2;
+    rect.height = this.height;
     rect.options.fillStyle = BouncePainter._PAUSE_COLOR;
     this._pausepainter.drawRect(rect);
     this._pausepainter.showCanvas();
@@ -196,7 +194,7 @@ BouncePainter.prototype.clearPauseScreen = function() {
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.drawCircle = function() {
-    this._toppainter.drawCircle(this._circle);
+    this._forepainter.drawCircle(this._circle);
     return this;
 };
 
@@ -212,7 +210,7 @@ BouncePainter.prototype.clearCircle = function() {
     rect.y = circle.top;
     rect.width = circle.right - circle.left;
     rect.height = circle.bottom - circle.top;
-    this._toppainter.clearRect(rect);
+    this._forepainter.clearRect(rect);
     return this;
 };
 
@@ -221,7 +219,7 @@ BouncePainter.prototype.clearCircle = function() {
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.drawShapes = function() {
-    var i, len, shapes = this._shapes, painter = this._toppainter;
+    var i, len, shapes = this._shapes, painter = this._forepainter;
 
     for (i = 0, len = shapes.length; i < len; ++i) {
         shapes[i].draw(painter);
@@ -234,7 +232,7 @@ BouncePainter.prototype.drawShapes = function() {
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.clearShapes = function() {
-    var i, len, shapes = this._shapes, painter = this._toppainter;
+    var i, len, shapes = this._shapes, painter = this._forepainter;
 
     for (i = 0, len = shapes.length; i < len; ++i) {
         painter.clearRect(shapes[i]);
@@ -248,7 +246,7 @@ BouncePainter.prototype.clearShapes = function() {
  */
 BouncePainter.prototype.drawScore = function(currScore) {
     this._score.text = currScore;
-    this._bottompainter.drawText(this._score);
+    this._forepainter.drawText(this._score);
     return this;
 };
 
@@ -257,7 +255,7 @@ BouncePainter.prototype.drawScore = function(currScore) {
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.drawHighScore = function(highScore) {
-    var painter = this._bottompainter;
+    var painter = this._forepainter;
 
     this._highScore.text = 'Best: ' + highScore + ' ';
     // Place the high score at the bottom right corner of the canvas.
@@ -269,14 +267,14 @@ BouncePainter.prototype.drawHighScore = function(highScore) {
 BouncePainter.prototype._clearScore = function(which) {
     var rect = this._rect,
         score = this[which],
-        width = this._bottompainter.getTextWidth(score.text),
+        width = this._forepainter.getTextWidth(score),
         height = width * 1.5;
 
     rect.x = Math.floor(score.x - width/2);
     rect.y = Math.floor(score.y - height/2);
     rect.width = Math.ceil(width);
     rect.height = Math.ceil(height);
-    this._bottompainter.clearRect(rect);
+    this._forepainter.clearRect(rect);
     return this;
 };
 
@@ -352,7 +350,7 @@ function BounceInputDaemon(element, circle) {
     function mouseover(event) {
         /*jshint validthis:true */
         setDiff(this, event);
-        // Left mouse button not still pressed.
+        // The left mouse button is not still pressed.
         if (event.which !== 1) {
             // Create an articial mouseup event since we lost the original
             // when the user moved their mouse out of the input element.
@@ -897,61 +895,35 @@ function styleCanvas(canvas, options) {
  *
  */
 function makeBouncePainter(container, canvas, circle, shapes) {
-    var topcanvas, bottomcanvas, pausecanvas, options;
+    var backcanvas, pausecanvas, options;
 
-    // These canvases will be used for the foreground.
-    // The top for shapes, the bottom for the score and
-    // the third for the pause screen.
-    topcanvas = createElement('canvas');
-    bottomcanvas = createElement('canvas');
+    // The backcanvas is used for the background, the original for
+    // the foreground and the pausecanvas for the pause screen.
+    backcanvas = createElement('canvas');
     pausecanvas = createElement('canvas');
 
-    topcanvas.className = 'bounce-top-canvas';
-    bottomcanvas.className = 'bounce-bottom-canvas';
+    backcanvas.className = 'bounce-back-canvas';
     pausecanvas.className = 'bounce-pause-canvas';
 
     options = {
         width: canvas.width,
-        height: Math.floor(canvas.height / 2)
+        height: canvas.height
     };
 
-    // Math.floor(x / 2) + Math.ceil(x / 2) = x
-    // pausecanvas will cover both canvases.
-    styleCanvas(topcanvas, options);
-    options.height = Math.ceil(canvas.height / 2);
-    options.top = topcanvas.height;
-    styleCanvas(bottomcanvas, options);
-    options.height = canvas.height;
-    options.top = '0';
-    options.zIndex = '3';
+    options.zIndex = '-1';
+    styleCanvas(backcanvas, options);
+    options.zIndex = '1';
     options.display = 'none';
     styleCanvas(pausecanvas, options);
 
-    container.appendChild(topcanvas);
-    container.appendChild(bottomcanvas);
+    container.appendChild(backcanvas);
     container.appendChild(pausecanvas);
 
     return new BouncePainter(
         circle, shapes,
-        new cog.Painter(canvas), new cog.Painter(topcanvas),
-        new cog.Painter(bottomcanvas), new cog.Painter(pausecanvas));
-}
-
-/**
- *
- */
-function makeInputSurface(container, canvas) {
-    var inputSurface = createElement('canvas');
-
-    inputSurface.className = 'bounce-input-surface';
-    styleCanvas(inputSurface, {
-        width: canvas.width,
-        height: Math.ceil(canvas.height / 2),
-        top: Math.floor(canvas.height / 2),
-        zIndex: '2'
-    });
-    container.appendChild(inputSurface);
-    return inputSurface;
+        new cog.Painter(backcanvas),
+        new cog.Painter(canvas),
+        new cog.Painter(pausecanvas));
 }
 
 /**
@@ -974,20 +946,16 @@ function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
                 storageManager, appCacheManager) {
     var container = createContainer(canvas);
 
-    this.width = canvas.width;
-    this.height = Math.floor(canvas.height / 2);
-
     this.canvas = canvas;
     this.circle = circle;
     this.shapes = shapes;
 
     this._bouncer = bouncer || new NormalBouncer(
-        this.circle, this.shapes, this.width, this.height);
+        circle, shapes, canvas.width, Math.floor(canvas.height / 2));
 
     this.painter = painter || makeBouncePainter(
         container, canvas, circle, shapes);
-    this.inputDaemon = inputDaemon || new BounceInputDaemon(
-        makeInputSurface(container, canvas), circle);
+    this.inputDaemon = inputDaemon || new BounceInputDaemon(canvas, circle);
     this.storageManager = storageManager || new cog.GameStorageManager();
     this.appCacheManager = appCacheManager || new cog.AppCacheManager();
 
