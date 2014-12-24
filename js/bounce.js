@@ -61,7 +61,8 @@ function returnFalse() {
  */
 
 /**
- *
+ * Note that there is no easy and accurate way of finding the height of the
+ * text, so we basically use a factor of width as a simple hack.
  * @param
  * @param
  * @param
@@ -70,8 +71,8 @@ function returnFalse() {
  * @param
  * @constructor
  */
-function BouncePainter(circle, shapes, score, backpainter,
-                       toppainter, bottompainter, pausepainter) {
+function BouncePainter(circle, shapes, backpainter, toppainter,
+                       bottompainter, pausepainter) {
     var i, len;
 
     this.width = toppainter.width;
@@ -85,13 +86,29 @@ function BouncePainter(circle, shapes, score, backpainter,
     this._bottompainter = bottompainter;
     this._pausepainter = pausepainter;
 
-    this._score = score;
-
     circle.options.fillStyle = BouncePainter._CIRCLE_COLOR;
     for (i = 0, len = shapes.length; i < len; ++i) {
         shapes[i].options.fillStyle = BouncePainter._SHAPE_COLOR;
     }
 
+    this._score = new cog.Text({
+        text: '',
+        x: Math.floor(bottompainter.width / 2),
+        y: Math.floor(bottompainter.height / 2),
+        font: 50 + 'pt Calibri',
+        textAlign: 'center',
+        textBaseline: 'middle',
+        fillStyle: '#F00'
+    });
+    this._highScore = new cog.Text({
+        text: '',
+        x: 0,                           // Dummy value.
+        y: bottompainter.height - 40,
+        font: 40 + 'pt Calibri',
+        textAlign: 'center',
+        textBaseline: 'middle',
+        fillStyle: '#F00'
+    });
     // Bounding rectangle used for clearing parts of the canvas.
     this._rect = new cog.Rect();
 }
@@ -102,6 +119,17 @@ BouncePainter._CIRCLE_COLOR = '#FFFF00';
 BouncePainter._SHAPE_COLOR = 'rgba(0,122,255,0.7)';
 /** @const {string} */
 BouncePainter._PAUSE_COLOR = 'rgba(150,150,150,0.8)';
+
+/**
+ * Draws all the elements of the game.
+ */
+BouncePainter.prototype.draw = function(score, highScore) {
+    this.drawBackground()
+        .drawShapes()
+        .drawCircle()
+        .drawScore(score)
+        .drawHighScore(highScore);
+};
 
 /**
  * Clears the entire canvas (top and bottom).
@@ -215,27 +243,33 @@ BouncePainter.prototype.clearShapes = function() {
 };
 
 /**
- * Draws the game scores.
+ * Draws the game score.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.drawScore = function(currentScore) {
-    var score = this._score;
-
-    score.text = currentScore;
-    this._bottompainter.drawText(score);
+BouncePainter.prototype.drawScore = function(currScore) {
+    this._score.text = currScore;
+    this._bottompainter.drawText(this._score);
     return this;
 };
 
 /**
- * Erases the game scores from the canvas.
+ * Draws the game high score.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.clearScore = function() {
+BouncePainter.prototype.drawHighScore = function(highScore) {
+    var painter = this._bottompainter;
+
+    this._highScore.text = 'Best: ' + highScore + ' ';
+    // Place the high score at the bottom right corner of the canvas.
+    this._highScore.x = painter.width - painter.getTextWidth(this._highScore)/2;
+    painter.drawText(this._highScore);
+    return this;
+};
+
+BouncePainter.prototype._clearScore = function(which) {
     var rect = this._rect,
-        score = this._score,
+        score = this[which],
         width = this._bottompainter.getTextWidth(score.text),
-        // There is no easy and accurate way of finding the height of the
-        // text, so we basically use a factor of width as a simple hack.
         height = width * 1.5;
 
     rect.x = Math.floor(score.x - width/2);
@@ -243,6 +277,24 @@ BouncePainter.prototype.clearScore = function() {
     rect.width = Math.ceil(width);
     rect.height = Math.ceil(height);
     this._bottompainter.clearRect(rect);
+    return this;
+};
+
+/**
+ * Erases the game score from the canvas.
+ * @return {BouncePainter} this
+ */
+BouncePainter.prototype.clearScore = function() {
+    this._clearScore('_score');
+    return this;
+};
+
+/**
+ * Erases the game score from the canvas.
+ * @return {BouncePainter} this
+ */
+BouncePainter.prototype.clearHighScore = function() {
+    this._clearScore('_highScore');
     return this;
 };
 
@@ -845,7 +897,7 @@ function styleCanvas(canvas, options) {
  *
  */
 function makeBouncePainter(container, canvas, circle, shapes) {
-    var topcanvas, bottomcanvas, pausecanvas, score, options;
+    var topcanvas, bottomcanvas, pausecanvas, options;
 
     // These canvases will be used for the foreground.
     // The top for shapes, the bottom for the score and
@@ -879,17 +931,8 @@ function makeBouncePainter(container, canvas, circle, shapes) {
     container.appendChild(bottomcanvas);
     container.appendChild(pausecanvas);
 
-    score = new cog.Text({
-        x: Math.floor(bottomcanvas.width / 2),
-        y: Math.floor(bottomcanvas.height / 2),
-        font: 50 + 'pt Calibri',
-        textAlign: 'center',
-        textBaseline: 'middle',
-        fillStyle: '#F00'
-    });
-
     return new BouncePainter(
-        circle, shapes, score,
+        circle, shapes,
         new cog.Painter(canvas), new cog.Painter(topcanvas),
         new cog.Painter(bottomcanvas), new cog.Painter(pausecanvas));
 }
@@ -953,7 +996,7 @@ function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
     this._originalCoords = [];
 
     this._saveOriginalPos();
-    this._draw();
+    this.painter.draw(this.score, this.storageManager.getHighScore());
     this.inputDaemon.start();
     this.inputDaemon.trigger('create');
 }
@@ -985,21 +1028,6 @@ Bounce.prototype._saveOriginalPos = function() {
     }
     // The last element will always be the circle coords.
     coordlist.push({x: circle.x, y: circle.y});
-};
-
-/**
- * Draw all the elements of the game.
- */
-Bounce.prototype._draw = function() {
-    var self = this;
-
-    requestAnimationFrame(function() {
-        self.painter
-            .drawBackground()
-            .drawShapes()
-            .drawCircle()
-            .drawScore(self.score);
-    });
 };
 
 Object.defineProperty(Bounce.prototype, 'score', {
@@ -1096,7 +1124,9 @@ Bounce.prototype._play = function() {
                 // No need to redraw the score if it hasn't changed.
                 score = self.score;
                 if (prevscore !== score) {
-                    painter.clearScore().drawScore(score);
+                    painter
+                        .clearScore()
+                        .drawScore(score);
                     prevscore = score;
                 }
             }
@@ -1215,7 +1245,7 @@ Bounce.prototype._repositionShapes = function() {
 
 Bounce.prototype._reset = function(event, autostart) {
     var self = this;
-    
+
     this.stop();
     // A call to requestAnimationFrame will make sure that all the effects
     // of the stop method will take place before being overwritten by the
@@ -1224,10 +1254,7 @@ Bounce.prototype._reset = function(event, autostart) {
         self.painter.clear();
         self._repositionShapes();
         self._elapsedmillisecs = 0;
-        self.painter
-            .drawShapes()
-            .drawCircle()
-            .drawScore(self.score);
+        self.painter.draw(self.score, self.storageManager.getHighScore());
         self._state = Bounce._READY;    // _state should change in here.
         self.inputDaemon.restart();
         self.inputDaemon.trigger(event);
