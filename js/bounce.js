@@ -67,49 +67,33 @@ function returnFalse() {
  * @param
  * @param
  * @param
- * @param
- * @param
- * @param
  * @constructor
  */
-function BouncePainter(circle, shapes, backpainter, forepainter, pausepainter) {
-    var i, len;
-
-    this.width = forepainter.width;
-    this.height = forepainter.height;
-
-    this._circle = circle;
-    this._shapes = shapes;
-
+function BouncePainter(backpainter, forepainter, pausepainter) {
     this._backpainter = backpainter;
     this._forepainter = forepainter;
     this._pausepainter = pausepainter;
 
-    circle.options.fillStyle = BouncePainter._CIRCLE_COLOR;
-    for (i = 0, len = shapes.length; i < len; ++i) {
-        shapes[i].options.fillStyle = BouncePainter._SHAPE_COLOR;
-    }
+    this._score = new cog.Text(
+        Math.floor(forepainter.width / 2),
+        3 * Math.floor(forepainter.height / 4));
+    this._highScore = new cog.Text(
+        null,
+        forepainter.height - BouncePainter._HIGH_SCORE_FONT_SIZE);
 
-    this._score = new cog.Text({
-        text: '',
-        x: Math.floor(forepainter.width / 2),
-        y: 3 * Math.floor(forepainter.height / 4),
-        font: 50 + 'pt Calibri',
+    // Reusable bounding rectangle used for clearing parts of the canvas.
+    this._rect = new cog.Rect(0, 0, forepainter.width, forepainter.height);
+
+    // Perfomance tip: Minimize canvas state changes.
+    // Apply any styling options that won't change here.
+    this._pausepainter
+        .setOption('fillStyle', BouncePainter._PAUSE_COLOR)
+        .drawRect(this._rect);
+    this._forepainter.setOptions({
         textAlign: 'center',
         textBaseline: 'middle',
-        fillStyle: '#F00'
+        font: BouncePainter._SCORE_FONT_SIZE + 'pt Calibri'
     });
-    this._highScore = new cog.Text({
-        text: '',
-        x: 0,                           // Dummy value.
-        y: forepainter.height - 40,
-        font: 40 + 'pt Calibri',
-        textAlign: 'center',
-        textBaseline: 'middle',
-        fillStyle: '#F00'
-    });
-    // Bounding rectangle used for clearing parts of the canvas.
-    this._rect = new cog.Rect();
 }
 
 /** @const {string} */
@@ -117,25 +101,44 @@ BouncePainter._CIRCLE_COLOR = '#FFFF00';
 /** @const {string} */
 BouncePainter._SHAPE_COLOR = 'rgba(0,122,255,0.7)';
 /** @const {string} */
+BouncePainter._SCORE_COLOR = '#F90101';
+/** @const {string} */
 BouncePainter._PAUSE_COLOR = 'rgba(150,150,150,0.8)';
+/** @const {number} */
+BouncePainter._SCORE_FONT_SIZE = 50;
+/** @const {number} */
+BouncePainter._HIGH_SCORE_FONT_SIZE = 40;
+
+Object.defineProperty(BouncePainter.prototype, 'width', {
+    get: function() { return this._forepainter.width; }
+});
+
+Object.defineProperty(BouncePainter.prototype, 'height', {
+    get: function() { return this._forepainter.height; }
+});
 
 /**
  * Draws all the elements of the game.
+ * @param {cog.Circle} circle - The circle of the game.
+ * @param {Array.<cog.Shape>]} shapes - The shapes of the game.
+ * @param {string} score - The curent score of the player in the game.
+ * @param {string} highScore - The best score of the player in the game.
  */
-BouncePainter.prototype.draw = function(score, highScore) {
+BouncePainter.prototype.draw = function(circle, shapes, score, highScore) {
     this.drawBackground()
-        .drawShapes()
-        .drawCircle()
+        .drawShapes(shapes)
+        .drawCircle(circle)
         .drawScore(score)
         .drawHighScore(highScore);
 };
 
 /**
- * Clears the entire canvas (but not the background).
+ * Clears the entire canvas.
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.clear = function() {
     this._forepainter.clear();
+    this._backpainter.clear();
     return this;
 };
 
@@ -152,59 +155,32 @@ BouncePainter.prototype.drawBackground = function() {
     rect.height = Math.floor(this.height / 2);
 
     rect.y = 0;
-    rect.options.fillStyle = '#383838';
-    painter.drawRect(rect);
-
+    painter.setOption('fillStyle', '#383838').drawRect(rect);
     rect.y = rect.height;
-    rect.options.fillStyle = '#D8D8D8';
-    painter.drawRect(rect);
+    painter.setOption('fillStyle', '#D8D8D8').drawRect(rect);
 
-    return this;
-};
-
-/**
- *
- * @return {BouncePainter} this
- */
-BouncePainter.prototype.drawPauseScreen = function() {
-    var rect = this._rect;
-
-    rect.x = 0;
-    rect.y = 0;
-    rect.width = this.width;
-    rect.height = this.height;
-    rect.options.fillStyle = BouncePainter._PAUSE_COLOR;
-    this._pausepainter.drawRect(rect);
-    this._pausepainter.showCanvas();
-    return this;
-};
-
-/**
- *
- * @return {BouncePainter} this
- */
-BouncePainter.prototype.clearPauseScreen = function() {
-    this._pausepainter.hideCanvas();
-    this._pausepainter.clear();
     return this;
 };
 
 /**
  * Draws the circle that the player controls.
+ * @param {cog.Circle} circle - The circle of the game.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.drawCircle = function() {
-    this._forepainter.drawCircle(this._circle);
+BouncePainter.prototype.drawCircle = function(circle) {
+    this._forepainter
+        .setOption('fillStyle', BouncePainter._CIRCLE_COLOR)
+        .drawCircle(circle);
     return this;
 };
 
 /**
  * Clears the bounding rectangle of the game circle.
+ * @param {cog.Circle} circle - The circle of the game.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.clearCircle = function() {
-    var circle = this._circle,
-        rect = this._rect;
+BouncePainter.prototype.clearCircle = function(circle) {
+    var rect = this._rect;
 
     rect.x = circle.left;
     rect.y = circle.top;
@@ -215,12 +191,14 @@ BouncePainter.prototype.clearCircle = function() {
 };
 
 /**
- * Draws the rest of the game shapes.
+ * Draws the rest of the game shapes (i.e. everything except the circle).
+ * @param {Array.<cog.Shape>]} shapes - The shapes of the game.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.drawShapes = function() {
-    var i, len, shapes = this._shapes, painter = this._forepainter;
+BouncePainter.prototype.drawShapes = function(shapes) {
+    var i, len, painter = this._forepainter;
 
+    painter.setOption('fillStyle', BouncePainter._SHAPE_COLOR);
     for (i = 0, len = shapes.length; i < len; ++i) {
         shapes[i].draw(painter);
     }
@@ -229,10 +207,11 @@ BouncePainter.prototype.drawShapes = function() {
 
 /**
  * Removes the shapes from the canvas.
+ * @param {Array.<cog.Shape>]} shapes - The shapes of the game.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.clearShapes = function() {
-    var i, len, shapes = this._shapes, painter = this._forepainter;
+BouncePainter.prototype.clearShapes = function(shapes) {
+    var i, len, painter = this._forepainter;
 
     for (i = 0, len = shapes.length; i < len; ++i) {
         painter.clearRect(shapes[i]);
@@ -246,7 +225,9 @@ BouncePainter.prototype.clearShapes = function() {
  */
 BouncePainter.prototype.drawScore = function(currScore) {
     this._score.text = currScore;
-    this._forepainter.drawText(this._score);
+    this._forepainter
+        .setOption('fillStyle', BouncePainter._SCORE_COLOR)
+        .drawText(this._score);
     return this;
 };
 
@@ -258,9 +239,17 @@ BouncePainter.prototype.drawHighScore = function(highScore) {
     var painter = this._forepainter;
 
     this._highScore.text = 'Best: ' + highScore + ' ';
+    // Change the font settings before calculating the text width.
+    painter.setOption(
+        'font', BouncePainter._HIGH_SCORE_FONT_SIZE + 'pt Calibri');
     // Place the high score at the bottom right corner of the canvas.
     this._highScore.x = painter.width - painter.getTextWidth(this._highScore)/2;
-    painter.drawText(this._highScore);
+    painter
+        .setOption('fillStyle', BouncePainter._SCORE_COLOR)
+        .drawText(this._highScore)
+        // Change the font settings back to the original ones.
+        // drawHighScore is not expected to be called a lot, so this is fast.
+        .setOption('font', BouncePainter._SCORE_FONT_SIZE + 'pt Calibri');
     return this;
 };
 
@@ -296,6 +285,24 @@ BouncePainter.prototype.clearHighScore = function() {
     return this;
 };
 
+/**
+ * Shows the pause screen.
+ * @return {BouncePainter} this
+ */
+BouncePainter.prototype.showPauseScreen = function() {
+    this._pausepainter.showCanvas();
+    return this;
+};
+
+/**
+ * Hides the pause screen.
+ * @return {BouncePainter} this
+ */
+BouncePainter.prototype.hidePauseScreen = function() {
+    this._pausepainter.hideCanvas();
+    return this;
+};
+
 /*********************************** Input ***********************************/
 
 /*
@@ -317,9 +324,9 @@ function BounceInputDaemon(element, circle) {
     this.element = element;
     this.circle = circle;
     this.mousemoved = false;
-    this._mousepos = {x: 0, y: 0};
+    this._mousepos = {x: circle.x, y: circle.y};
     this._diff = {dx: 0, dy: 0};
-    this._circlepos = {x: 0, y: 0};
+    this._circlepos = {x: circle.x, y: circle.y};
     this._fakeMouseupEvent = {preventDefault: cog.noop, which: 1};
 
     var self = this;
@@ -894,7 +901,7 @@ function styleCanvas(canvas, options) {
 /**
  *
  */
-function makeBouncePainter(container, canvas, circle, shapes) {
+function makeBouncePainter(container, canvas) {
     var backcanvas, pausecanvas, options;
 
     // The backcanvas is used for the background, the original for
@@ -920,7 +927,6 @@ function makeBouncePainter(container, canvas, circle, shapes) {
     container.appendChild(pausecanvas);
 
     return new BouncePainter(
-        circle, shapes,
         new cog.Painter(backcanvas),
         new cog.Painter(canvas),
         new cog.Painter(pausecanvas));
@@ -950,23 +956,23 @@ function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
     this.circle = circle;
     this.shapes = shapes;
 
-    this._bouncer = bouncer || new NormalBouncer(
-        circle, shapes, canvas.width, Math.floor(canvas.height / 2));
-
-    this.painter = painter || makeBouncePainter(
-        container, canvas, circle, shapes);
+    this.painter = painter || makeBouncePainter(container, canvas);
     this.inputDaemon = inputDaemon || new BounceInputDaemon(canvas, circle);
     this.storageManager = storageManager || new cog.GameStorageManager();
     this.appCacheManager = appCacheManager || new cog.AppCacheManager();
+
+    this._bouncer = bouncer || new NormalBouncer(
+        circle, shapes, canvas.width, Math.floor(canvas.height / 2));
 
     this._state = Bounce._READY;
     this._elapsedmillisecs = 0;
     this._originalCoords = [];
 
     this._saveOriginalPos();
-    this.painter.draw(this.score, this.storageManager.getHighScore());
-    this.inputDaemon.start();
-    this.inputDaemon.trigger('create');
+    this.painter.draw(
+        circle, shapes, this.score, this.storageManager.getHighScore());
+    this.inputDaemon.start()
+        .trigger('create');
 }
 
 /**
@@ -1058,6 +1064,8 @@ Bounce.prototype._play = function() {
 
         (function animate(now) {
             var self = that,
+                circle = self.circle,
+                shapes = self.shapes,
                 painter = self.painter,
                 bouncer = self._bouncer,
                 dt, pos, score;
@@ -1074,15 +1082,15 @@ Bounce.prototype._play = function() {
                 // No need to redraw the circle if it hasn't moved.
                 if (self.inputDaemon.mousemoved) {
                     pos = self.inputDaemon.getCirclePos();
-                    painter.clearCircle();
+                    painter.clearCircle(circle);
                     bouncer.moveCircle(pos.x, pos.y);
-                    painter.drawCircle();
+                    painter.drawCircle(circle);
                 }
 
                 // Draw the shapes after the circle for better results.
-                painter.clearShapes();
+                painter.clearShapes(shapes);
                 bouncer.moveShapes(dt);
-                painter.drawShapes();
+                painter.drawShapes(shapes);
 
                 if (bouncer.isOutOfBounds() || bouncer.hasCollision()) {
                     self.stop();
@@ -1148,7 +1156,7 @@ Bounce.prototype.pause = function() {
     this._state = Bounce._PAUSED;
 
     requestAnimationFrame(function() {
-        self.painter.drawPauseScreen();
+        self.painter.showPauseScreen();
     });
     // Anything can happen to the system while the game is paused. Save the
     // score just in case. The player wouldn't want to lose a new high score.
@@ -1171,7 +1179,7 @@ Bounce.prototype.resume = function() {
     this._state = Bounce._RUNNING;
 
     requestAnimationFrame(function() {
-        self.painter.clearPauseScreen();
+        self.painter.hidePauseScreen();
     });
     this._play();
     this.inputDaemon.trigger('resume');
@@ -1219,14 +1227,17 @@ Bounce.prototype._reset = function(event, autostart) {
     // of the stop method will take place before being overwritten by the
     // effects of the setup and start method calls.
     requestAnimationFrame(function() {
-        self.painter.clear();
         self._repositionShapes();
         self._elapsedmillisecs = 0;
-        self.painter.hidePauseScreen();
-        self.painter.draw(self.score, self.storageManager.getHighScore());
-        self._state = Bounce._READY;    // _state should change in here.
-        self.inputDaemon.restart();
-        self.inputDaemon.trigger(event);
+        self._state = Bounce._READY;    // _state should change inside rAF.
+        self.painter
+            .hidePauseScreen()
+            .clear()
+            .draw(self.circle, self.shapes, self.score,
+                  self.storageManager.getHighScore());
+        self.inputDaemon
+            .restart()
+            .trigger(event);
         if (autostart) {
             self.start();
         }
@@ -1267,11 +1278,11 @@ Bounce.prototype.reset = function() {
  * Create a new circle proportional to the dimensions specified.
  */
 function _createCircle(width, height) {
-    return new cog.Circle({
-        x: Math.floor(width / 2),
-        y: Math.floor(height / 2),
-        radius: Math.floor(0.05 * Math.min(width, height))
-    });
+    return new cog.Circle(
+        Math.floor(width / 2),
+        Math.floor(height / 2),
+        Math.floor(0.05 * Math.min(width, height))
+    );
 }
 
 /**
@@ -1285,28 +1296,28 @@ function _createShapes(width, height) {
         rect2height = Math.floor(1.2 * rectheight);
 
     return [
-        new cog.Square({
-            x: 0,
-            y: 0,
-            width: squarewidth
-        }),
-        new cog.Square({
-            x: width - squarewidth,
-            y: 0,
-            width: squarewidth
-        }),
-        new cog.Rect({
-            x: 0,
-            y: height - rectheight,
-            width: rectwidth,
-            height: rectheight
-        }),
-        new cog.Rect({
-            x: width - rect2width,
-            y: height - rect2height,
-            width: rect2width,
-            height: rect2height
-        })
+        new cog.Square(
+            0,
+            0,
+            squarewidth
+        ),
+        new cog.Square(
+            width - squarewidth,
+            0,
+            squarewidth
+        ),
+        new cog.Rect(
+            0,
+            height - rectheight,
+            rectwidth,
+            rectheight
+        ),
+        new cog.Rect(
+            width - rect2width,
+            height - rect2height,
+            rect2width,
+            rect2height
+        )
     ];
 }
 
