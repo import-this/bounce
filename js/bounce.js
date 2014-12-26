@@ -324,15 +324,19 @@ function BounceInputDaemon(element, circle) {
     this.element = element;
     this.circle = circle;
     this.mousemoved = false;
+
+    // mouse position + diff = circle position
     this._mousepos = {x: circle.x, y: circle.y};
     this._diff = {dx: 0, dy: 0};
     this._circlepos = {x: circle.x, y: circle.y};
+
+    this._boundingRect = element.getBoundingClientRect();
     this._fakeMouseupEvent = {preventDefault: cog.noop, which: 1};
 
     var self = this;
 
-    function setDiff(element, event) {
-        var rect = element.getBoundingClientRect(),
+    function setDiff(event) {
+        var rect = self._boundingRect,
             circle = self.circle,
             diff = self._diff;
 
@@ -342,7 +346,7 @@ function BounceInputDaemon(element, circle) {
 
     function mousemove(event) {
         /*jshint validthis:true */
-        var rect = this.getBoundingClientRect(),
+        var rect = self._boundingRect,
             pos = self._mousepos;
 
         pos.x = event.clientX - rect.left;
@@ -356,7 +360,7 @@ function BounceInputDaemon(element, circle) {
      */
     function mouseover(event) {
         /*jshint validthis:true */
-        setDiff(this, event);
+        setDiff(event);
         // The left mouse button is not still pressed.
         if (event.which !== 1) {
             // Create an articial mouseup event since we lost the original
@@ -369,7 +373,7 @@ function BounceInputDaemon(element, circle) {
         event.preventDefault();
         // Left mouse button pressed.
         if (event.which === 1) {
-            setDiff(this, event);
+            setDiff(event);
             element.addEventListener('mousemove', mousemove, false);
             element.addEventListener('mouseover', mouseover, false);
         }
