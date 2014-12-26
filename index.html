@@ -5,6 +5,15 @@
 
 		<link rel="stylesheet" type="text/css" href="css/bounce.css">
 
+		<script type="text/javascript">
+			window.onerror = function() {
+				var errormsg = document.getElementById('error-msg');
+				if (errormsg) {
+					errormsg.style.display = 'table';
+				}
+			};
+		</script>
+
 		<!-- https://rawgit.com/ -->
 		<!-- TODO: Change to production mode -->
 		<script type="text/javascript" src="//rawgit.com/import-this/cog/master/cog.js"></script>
