@@ -1222,6 +1222,7 @@ Bounce.prototype._reset = function(event, autostart) {
         self.painter.clear();
         self._repositionShapes();
         self._elapsedmillisecs = 0;
+        self.painter.hidePauseScreen();
         self.painter.draw(self.score, self.storageManager.getHighScore());
         self._state = Bounce._READY;    // _state should change in here.
         self.inputDaemon.restart();
