@@ -941,31 +941,32 @@ function makeBouncePainter(container, canvas) {
  * @param {canvas} canvas - The main canvas to draw the game on.
  * @param {cog.Circle} circle - The circle of the game.
  * @param {Array} shapes - The rest of the shapes.
- * @param {AbstractBouncer} [bouncer=NormalBouncer] -
- *      The object responsible for the game logic.
- * @param {BouncePainter} [painter=BouncePainter] -
- *      The object responsible for drawing the elements of the game.
- * @param {BounceInputDaemon} [inputDaemon=BounceInputDaemon] -
- *      The object responsible for receiving input from the user.
- * @param {cog.StorageManager} [storageManager=cog.StorageManager] -
- *      The object responsible for saving the game stats.
- * @param {cog.AppCacheManager} [appCacheManager=cog.AppCacheManager] -
- *      The object responsible for the application cache.
+ * @param {Object} opt - A configuration object.
+ *    This object may specify any of the following attributes:
+ *      {AbstractBouncer} [bouncer=NormalBouncer] -
+ *          The object responsible for the game logic.
+ *      {BouncePainter} [painter=BouncePainter] -
+ *          The object responsible for drawing the elements of the game.
+ *      {BounceInputDaemon} [inputDaemon=BounceInputDaemon] -
+ *          The object responsible for receiving input from the user.
+ *      {cog.StorageManager} [storageManager=cog.StorageManager] -
+ *          The object responsible for saving the game stats.
+ *      {cog.AppCacheManager} [appCacheManager=cog.AppCacheManager] -
+ *          The object responsible for the application cache.
  */
-function Bounce(canvas, circle, shapes, bouncer, painter, inputDaemon,
-                storageManager, appCacheManager) {
+function Bounce(canvas, circle, shapes, opt) {
     var container = createContainer(canvas);
 
     this.canvas = canvas;
     this.circle = circle;
     this.shapes = shapes;
 
-    this.painter = painter || makeBouncePainter(container, canvas);
-    this.inputDaemon = inputDaemon || new BounceInputDaemon(canvas, circle);
-    this.storageManager = storageManager || new cog.GameStorageManager();
-    this.appCacheManager = appCacheManager || new cog.AppCacheManager();
+    this.painter = opt.painter || makeBouncePainter(container, canvas);
+    this.inputDaemon = opt.inputDaemon || new BounceInputDaemon(canvas, circle);
+    this.storageManager = opt.storageManager || new cog.GameStorageManager();
+    this.appCacheManager = opt.appCacheManager || new cog.AppCacheManager();
 
-    this._bouncer = bouncer || new NormalBouncer(
+    this._bouncer = opt.bouncer || new NormalBouncer(
         circle, shapes, canvas.width, Math.floor(canvas.height / 2));
 
     this._state = Bounce._READY;
@@ -1358,7 +1359,7 @@ function bounce(canvas, difficulty) {
             break;
     }
 
-    return new Bounce(canvas, circle, shapes, bouncer);
+    return new Bounce(canvas, circle, shapes, {bouncer: bouncer});
 }
 
 /**
