@@ -5,7 +5,8 @@
         startMenu, endMenu,
         startButton, restartButton,
         currScore, bestScore,
-        timesPlayed, totalTimesPlayed;
+        timesPlayed, totalTimesPlayed,
+        touchdownEvent;
 
     /**
      * Makes the canvas specified cover the whole window.
@@ -13,6 +14,32 @@
     function fitCanvas(canvas) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+    }
+
+    /**
+     * Starts the game when the user presses the left mouse button.
+     */
+    function startOnMouseInput(event) {
+        /*jshint validthis:true */
+        // Left mouse button pressed.
+        if (event.which === 1) {
+            event.preventDefault();
+            this.removeEventListener('mousedown', startOnMouseInput, false);
+            game.start();
+        }
+    }
+    
+    function startOnTouchInput(event) {
+        /*jshint validthis:true */
+        event.preventDefault();
+        this.removeEventListener(touchdownEvent, startOnTouchInput, false);
+        game.start();
+    }
+
+    function registerStartOnInput() {
+        var eventstr = bounce.BounceInputDaemon.TOUCHDOWN_EVENT;
+        gameContainer.addEventListener('mousedown', startOnMouseInput, false);
+        gameContainer.addEventListener(eventstr, startOnTouchInput, false);
     }
 
     function showEndMenu() {
@@ -24,7 +51,7 @@
     }
 
     function hideEndMenu() {
-        gameContainer.addEventListener('mousedown', startOnInput, false);
+        registerStartOnInput();
         endMenu.style.display = 'none';
     }
 
@@ -36,19 +63,6 @@
         game.inputDaemon.on('stop', showEndMenu);
         game.inputDaemon.on('reset', hideEndMenu);
         return game;
-    }
-
-    /**
-     * Starts the game when the user presses the left mouse button.
-     */
-    function startOnInput(event) {
-        /*jshint validthis:true */
-        // Left mouse button pressed.
-        if (event.which === 1) {
-            event.preventDefault();
-            this.removeEventListener('mousedown', startOnInput, false);
-            game.start();
-        }
     }
 
     // Global exception handler.
@@ -76,8 +90,8 @@
             // game (and a lot of work, too), so simply create a brand-new one.
             game.destroy();
             game = newGame(canvas);
-            // addEventListener discards potential duplicates.
-            gameContainer.addEventListener('mousedown', startOnInput, false);
+            // addEventListener inside this discards potential duplicates.
+            registerStartOnInput();
         }, false);
 
         // TODO: Decide if this will be used eventually.
@@ -129,7 +143,7 @@
             }, false);
 
             startMenu.style.display = 'none';
-            gameContainer.addEventListener('mousedown', startOnInput, false);
+            registerStartOnInput();
         }, false);
 
         restartButton.addEventListener('click', function restart() {

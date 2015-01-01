@@ -333,19 +333,20 @@ function BounceInputDaemon(element, circle) {
     this._boundingRect = element.getBoundingClientRect();
     this._fakeMouseupEvent = {preventDefault: cog.noop, which: 1};
 
-    var self = this;
+    var self = this, touchmove;
 
-    function setDiff(event) {
+    function setDiff(clientX, clientY) {
         var rect = self._boundingRect,
             circle = self.circle,
             diff = self._diff;
 
-        diff.dx = circle.x - (event.clientX - rect.left);
-        diff.dy = circle.y - (event.clientY - rect.top);
+        diff.dx = circle.x - (clientX - rect.left);
+        diff.dy = circle.y - (clientY - rect.top);
     }
 
+    /*********************** Handlers for mouse events. ***********************/
+
     function mousemove(event) {
-        /*jshint validthis:true */
         var rect = self._boundingRect,
             pos = self._mousepos;
 
@@ -359,8 +360,7 @@ function BounceInputDaemon(element, circle) {
      * get a new diff to prevent the circle from jumping to another spot.
      */
     function mouseover(event) {
-        /*jshint validthis:true */
-        setDiff(event);
+        setDiff(event.clientX, event.clientY);
         // The left mouse button is not still pressed.
         if (event.which !== 1) {
             // Create an articial mouseup event since we lost the original
@@ -373,12 +373,11 @@ function BounceInputDaemon(element, circle) {
         event.preventDefault();
         // Left mouse button pressed.
         if (event.which === 1) {
-            setDiff(event);
+            setDiff(event.clientX, event.clientY);
             element.addEventListener('mousemove', mousemove, false);
             element.addEventListener('mouseover', mouseover, false);
         }
     };
-
     this._mouseup = function(event) {
         event.preventDefault();
         // Left mouse button released.
@@ -387,10 +386,73 @@ function BounceInputDaemon(element, circle) {
             element.removeEventListener('mouseover', mouseover, false);
         }
     };
+
+    /*********************** Handlers for touch events. ***********************/
+
+    // Touch events may give fractional coordinates, so round them up.
+    if (global.navigator.msPointerEnabled) {    // Internet Explorer
+        touchmove = function(event) {
+            var rect = self._boundingRect,
+                pos = self._mousepos;
+
+            event.preventDefault();
+            pos.x = Math.round(event.clientX) - rect.left;
+            pos.y = Math.round(event.clientY) - rect.top;
+            self.mousemoved = true;
+        };
+
+        this._touchdown = function(event) {
+            event.preventDefault();
+            setDiff(Math.round(event.clientX), Math.round(event.clientY));
+            element.addEventListener('MSPointerMove', touchmove, false);
+        };
+        this._touchup = function(event) {
+            event.preventDefault();
+            element.removeEventListener('MSPointerMove', touchmove, false);
+        };
+    } else {                                    // Rest
+        touchmove = function(event) {
+            var rect = self._boundingRect,
+                pos = self._mousepos;
+
+            event.preventDefault();
+            pos.x = Math.round(event.changedTouches[0].clientX) - rect.left;
+            pos.y = Math.round(event.changedTouches[0].clientY) - rect.top;
+            self.mousemoved = true;
+        };
+
+        this._touchdown = function(event) {
+            var touch = event.changedTouches[0];
+
+            event.preventDefault();
+            setDiff(Math.round(touch.clientX), Math.round(touch.clientY));
+            element.addEventListener('touchmove', touchmove, false);
+        };
+        this._touchup = function(event) {
+            event.preventDefault();
+            element.removeEventListener('touchmove', touchmove, false);
+        };
+    }
 }
 
 BounceInputDaemon.prototype = Object.create(cog.UserInputDaemon.prototype);
 BounceInputDaemon.prototype.constructor = BounceInputDaemon;
+
+if (global.navigator.msPointerEnabled) {
+    /** @const {string} */
+    BounceInputDaemon.TOUCHDOWN_EVENT = 'MSPointerDown';
+    /** @const {string} */
+    BounceInputDaemon.TOUCHUP_EVENT = 'MSPointerUp';
+    /** @const {string} */
+    BounceInputDaemon.TOUCHMOVE_EVENT = 'MSPointerMove';
+} else {
+    /** @const {string} */
+    BounceInputDaemon.TOUCHDOWN_EVENT = 'touchstart';
+    /** @const {string} */
+    BounceInputDaemon.TOUCHUP_EVENT = 'touchend';
+    /** @const {string} */
+    BounceInputDaemon.TOUCHMOVE_EVENT = 'touchmove';
+}
 
 /**
  * Starts the deamon.
@@ -399,6 +461,10 @@ BounceInputDaemon.prototype.constructor = BounceInputDaemon;
 BounceInputDaemon.prototype.start = function() {
     this.element.addEventListener('mousedown', this._mousedown, false);
     this.element.addEventListener('mouseup', this._mouseup, false);
+    this.element.addEventListener(
+        BounceInputDaemon.TOUCHDOWN_EVENT, this._touchdown, false);
+    this.element.addEventListener(
+        BounceInputDaemon.TOUCHUP_EVENT, this._touchup, false);
     return this;
 };
 
@@ -409,6 +475,10 @@ BounceInputDaemon.prototype.start = function() {
 BounceInputDaemon.prototype.stop = function() {
     this.element.removeEventListener('mousedown', this._mousedown, false);
     this.element.removeEventListener('mouseup', this._mouseup, false);
+    this.element.removeEventListener(
+        BounceInputDaemon.TOUCHDOWN_EVENT, this._touchdown, false);
+    this.element.removeEventListener(
+        BounceInputDaemon.TOUCHUP_EVENT, this._touchup, false);
     // Create an articial mouseup event (to unregister the additional handlers)
     // in case the user restarted the game without releasing the mouse button.
     this._mouseup(this._fakeMouseupEvent);
@@ -1371,19 +1441,26 @@ function bounce(canvas, difficulty) {
  *      the main canvas of the game.
  */
 function play(game, autostart) {
-    var container;
+    var container, mouseevent, touchevent;
 
     if (autostart) {
         game.start();
     } else {
         container = game.canvas.parentNode;
-        container.addEventListener('mousedown', function mousedown(event) {
+        mouseevent = 'mousedown';
+        container.addEventListener(mouseevent, function mousedown(event) {
             // Left mouse button pressed.
             if (event.which === 1) {
                 event.preventDefault();
-                this.removeEventListener('mousedown', mousedown, false);
+                this.removeEventListener(mouseevent, mousedown, false);
                 game.start();
             }
+        }, false);
+        touchevent = BounceInputDaemon.TOUCHDOWN_EVENT;
+        container.addEventListener(touchevent, function touchdown(event) {
+            event.preventDefault();
+            this.removeEventListener(touchevent, touchdown, false);
+            game.start();
         }, false);
     }
 }
