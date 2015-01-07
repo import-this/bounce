@@ -79,7 +79,7 @@ function BouncePainter(backpainter, forepainter, pausepainter) {
         3 * Math.floor(forepainter.height / 4));
     this._highScore = new cog.Text(
         null,
-        forepainter.height - BouncePainter._HIGH_SCORE_FONT_SIZE);
+        forepainter.height - BouncePainter.defaults.highScoreFontSize);
 
     // Reusable bounding rectangle used for clearing parts of the canvas.
     this._rect = new cog.Rect(0, 0, forepainter.width, forepainter.height);
@@ -87,27 +87,31 @@ function BouncePainter(backpainter, forepainter, pausepainter) {
     // Perfomance tip: Minimize canvas state changes.
     // Apply any styling options that won't change here.
     this._pausepainter
-        .setOption('fillStyle', BouncePainter._PAUSE_COLOR)
+        .setOption('fillStyle', BouncePainter.defaults.pauseColor)
         .drawRect(this._rect);
     this._forepainter.setOptions({
         textAlign: 'center',
         textBaseline: 'middle',
-        font: BouncePainter._SCORE_FONT_SIZE + 'pt Calibri'
+        font: BouncePainter.defaults.scoreFontSize + 'pt Calibri'
     });
 }
 
-/** @const {string} */
-BouncePainter._CIRCLE_COLOR = '#FFFF00';
-/** @const {string} */
-BouncePainter._SHAPE_COLOR = 'rgba(0,122,255,0.7)';
-/** @const {string} */
-BouncePainter._SCORE_COLOR = '#F90101';
-/** @const {string} */
-BouncePainter._PAUSE_COLOR = 'rgba(150,150,150,0.8)';
-/** @const {number} */
-BouncePainter._SCORE_FONT_SIZE = 50;
-/** @const {number} */
-BouncePainter._HIGH_SCORE_FONT_SIZE = 40;
+/**
+ * BouncePainter default options.
+ * @const
+ */
+BouncePainter.defaults = {
+    circleColor: '#FFFF00',
+    shapeColor: 'rgba(0,122,255,0.7)',
+    scoreColor: '#F90101',
+    pauseColor: 'rgba(150,150,150,0.8)',
+    scoreFontSize: 50,
+    highScoreFontSize: 40
+};
+
+if (Object.seal) {
+    Object.seal(BouncePainter.defaults);
+}
 
 Object.defineProperty(BouncePainter.prototype, 'width', {
     get: function() { return this._forepainter.width; }
@@ -169,7 +173,7 @@ BouncePainter.prototype.drawBackground = function() {
  */
 BouncePainter.prototype.drawCircle = function(circle) {
     this._forepainter
-        .setOption('fillStyle', BouncePainter._CIRCLE_COLOR)
+        .setOption('fillStyle', BouncePainter.defaults.circleColor)
         .drawCircle(circle);
     return this;
 };
@@ -198,7 +202,7 @@ BouncePainter.prototype.clearCircle = function(circle) {
 BouncePainter.prototype.drawShapes = function(shapes) {
     var i, len, painter = this._forepainter;
 
-    painter.setOption('fillStyle', BouncePainter._SHAPE_COLOR);
+    painter.setOption('fillStyle', BouncePainter.defaults.shapeColor);
     for (i = 0, len = shapes.length; i < len; ++i) {
         shapes[i].draw(painter);
     }
@@ -226,7 +230,7 @@ BouncePainter.prototype.clearShapes = function(shapes) {
 BouncePainter.prototype.drawScore = function(currScore) {
     this._score.text = currScore;
     this._forepainter
-        .setOption('fillStyle', BouncePainter._SCORE_COLOR)
+        .setOption('fillStyle', BouncePainter.defaults.scoreColor)
         .drawText(this._score);
     return this;
 };
@@ -241,15 +245,15 @@ BouncePainter.prototype.drawHighScore = function(highScore) {
     this._highScore.text = 'Best: ' + highScore + ' ';
     // Change the font settings before calculating the text width.
     painter.setOption(
-        'font', BouncePainter._HIGH_SCORE_FONT_SIZE + 'pt Calibri');
+        'font', BouncePainter.defaults.highScoreFontSize + 'pt Calibri');
     // Place the high score at the bottom right corner of the canvas.
     this._highScore.x = painter.width - painter.getTextWidth(this._highScore)/2;
     painter
-        .setOption('fillStyle', BouncePainter._SCORE_COLOR)
+        .setOption('fillStyle', BouncePainter.defaults.scoreColor)
         .drawText(this._highScore)
         // Change the font settings back to the original ones.
         // drawHighScore is not expected to be called a lot, so this is fast.
-        .setOption('font', BouncePainter._SCORE_FONT_SIZE + 'pt Calibri');
+        .setOption('font', BouncePainter.defaults.scoreFontSize + 'pt Calibri');
     return this;
 };
 
