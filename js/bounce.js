@@ -1043,7 +1043,7 @@ function Bounce(canvas, circle, shapes, opt) {
     this._bouncer = opt.bouncer || new NormalBouncer(
         circle, shapes, canvas.width, Math.floor(canvas.height / 2));
 
-    this._state = Bounce._READY;
+    this._state = Bounce._State.READY;
     this._elapsedmillisecs = 0;
     this._originalCoords = [];
 
@@ -1056,15 +1056,18 @@ function Bounce(canvas, circle, shapes, opt) {
 
 /**
  * An enumeration of the game states.
+ * @const
  */
-/** @const {number} */
-Bounce._READY = 0;
-/** @const {number} */
-Bounce._RUNNING = 1;
-/** @const {number} */
-Bounce._PAUSED = 2;
-/** @const {number} */
-Bounce._ENDED = 3;
+Bounce._State = {
+    READY: 0,
+    RUNNING: 1,
+    PAUSED: 2,
+    ENDED: 3
+};
+
+if (Object.freeze) {
+    Object.freeze(Bounce._State);
+}
 
 /**
  * .
@@ -1151,7 +1154,7 @@ Bounce.prototype._play = function() {
 
             // Place the rAF before everything to assure as
             // close to 60fps with the setTimeout fallback.
-            if (self._state === Bounce._RUNNING) {
+            if (self._state === Bounce._State.RUNNING) {
                 requestAnimationFrame(animate);
 
                 dt = now - timestamp;
@@ -1195,10 +1198,10 @@ Bounce.prototype._play = function() {
  * @return {boolean} true if the game was successfully started.
  */
 Bounce.prototype.start = function() {
-    if (this._state !== Bounce._READY) {
+    if (this._state !== Bounce._State.READY) {
         return false;
     }
-    this._state = Bounce._RUNNING;
+    this._state = Bounce._State.RUNNING;
 
     this._play();
     this.inputDaemon.trigger('start');
@@ -1211,10 +1214,10 @@ Bounce.prototype.start = function() {
  * @return {boolean} true if the game was successfully stopped.
  */
 Bounce.prototype.stop = function() {
-    if (this._state !== Bounce._RUNNING) {
+    if (this._state !== Bounce._State.RUNNING) {
         return false;
     }
-    this._state = Bounce._ENDED;
+    this._state = Bounce._State.ENDED;
 
     this.saveStats();
     this.inputDaemon.trigger('stop');
@@ -1229,10 +1232,10 @@ Bounce.prototype.stop = function() {
 Bounce.prototype.pause = function() {
     var self = this;
 
-    if (this._state !== Bounce._RUNNING) {
+    if (this._state !== Bounce._State.RUNNING) {
         return false;
     }
-    this._state = Bounce._PAUSED;
+    this._state = Bounce._State.PAUSED;
 
     requestAnimationFrame(function() {
         self.painter.showPauseScreen();
@@ -1252,10 +1255,10 @@ Bounce.prototype.pause = function() {
 Bounce.prototype.resume = function() {
     var self = this;
 
-    if (this._state !== Bounce._PAUSED) {
+    if (this._state !== Bounce._State.PAUSED) {
         return false;
     }
-    this._state = Bounce._RUNNING;
+    this._state = Bounce._State.RUNNING;
 
     requestAnimationFrame(function() {
         self.painter.hidePauseScreen();
@@ -1308,7 +1311,7 @@ Bounce.prototype._reset = function(event, autostart) {
     requestAnimationFrame(function() {
         self._repositionShapes();
         self._elapsedmillisecs = 0;
-        self._state = Bounce._READY;    // _state should change inside rAF.
+        self._state = Bounce._State.READY;  // _state should change inside rAF.
         self.painter
             .hidePauseScreen()
             .clear()
@@ -1331,7 +1334,7 @@ Bounce.prototype._reset = function(event, autostart) {
  */
 Bounce.prototype.restart = function() {
     // Small perf improvement. Do nothing if the game is ready to start.
-    if (this._state === Bounce._READY) {
+    if (this._state === Bounce._State.READY) {
         this.inputDaemon.trigger('restart');
         return true;
     }
