@@ -74,13 +74,6 @@ function BouncePainter(backpainter, forepainter, pausepainter) {
     this._forepainter = forepainter;
     this._pausepainter = pausepainter;
 
-    this._score = new cog.Text(
-        Math.floor(forepainter.width / 2),
-        3 * Math.floor(forepainter.height / 4));
-    this._highScore = new cog.Text(
-        null,
-        forepainter.height - BouncePainter.defaults.highScoreFontSize);
-
     // Reusable bounding rectangle used for clearing parts of the canvas.
     this._rect = new cog.Rect(0, 0, forepainter.width, forepainter.height);
 
@@ -104,6 +97,8 @@ BouncePainter.defaults = {
     circleColor: '#FFFF00',
     shapeColor: 'rgba(0,122,255,0.7)',
     scoreColor: '#F90101',
+    backgroundTopColor: '#383838',
+    backgroundBottomColor: '#D8D8D8',
     pauseColor: 'rgba(150,150,150,0.8)',
     scoreFontSize: 50,
     highScoreFontSize: 40
@@ -121,10 +116,20 @@ Object.defineProperty(BouncePainter.prototype, 'height', {
     get: function() { return this._forepainter.height; }
 });
 
+BouncePainter.prototype._clearRect = function(x, y, width, height) {
+    var rect = this._rect;
+
+    rect.x = x;
+    rect.y = y;
+    rect.width = width;
+    rect.height = height;
+    this._forepainter.clearRect(rect);
+};
+
 /**
  * Draws all the elements of the game.
  * @param {cog.Circle} circle - The circle of the game.
- * @param {Array.<cog.Shape>]} shapes - The shapes of the game.
+ * @param {Array.<cog.Shape>} shapes - The shapes of the game.
  * @param {string} score - The curent score of the player in the game.
  * @param {string} highScore - The best score of the player in the game.
  */
@@ -159,9 +164,13 @@ BouncePainter.prototype.drawBackground = function() {
     rect.height = Math.floor(this.height / 2);
 
     rect.y = 0;
-    painter.setOption('fillStyle', '#383838').drawRect(rect);
+    painter
+        .setOption('fillStyle', BouncePainter.defaults.backgroundTopColor)
+        .drawRect(rect);
     rect.y = rect.height;
-    painter.setOption('fillStyle', '#D8D8D8').drawRect(rect);
+    painter
+        .setOption('fillStyle', BouncePainter.defaults.backgroundBottomColor)
+        .drawRect(rect);
 
     return this;
 };
@@ -184,19 +193,16 @@ BouncePainter.prototype.drawCircle = function(circle) {
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.clearCircle = function(circle) {
-    var rect = this._rect;
-
-    rect.x = circle.left;
-    rect.y = circle.top;
-    rect.width = circle.right - circle.left;
-    rect.height = circle.bottom - circle.top;
-    this._forepainter.clearRect(rect);
+    this._clearRect(circle.left,
+                    circle.top,
+                    circle.right - circle.left,
+                    circle.bottom - circle.top);
     return this;
 };
 
 /**
  * Draws the rest of the game shapes (i.e. everything except the circle).
- * @param {Array.<cog.Shape>]} shapes - The shapes of the game.
+ * @param {Array.<cog.Shape>} shapes - The shapes of the game.
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.drawShapes = function(shapes) {
@@ -211,7 +217,7 @@ BouncePainter.prototype.drawShapes = function(shapes) {
 
 /**
  * Removes the shapes from the canvas.
- * @param {Array.<cog.Shape>]} shapes - The shapes of the game.
+ * @param {Array.<cog.Shape>} shapes - The shapes of the game.
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.clearShapes = function(shapes) {
@@ -225,67 +231,67 @@ BouncePainter.prototype.clearShapes = function(shapes) {
 
 /**
  * Draws the game score.
+ * @param {cog.Text} currScore - The current score of the player.
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.drawScore = function(currScore) {
-    this._score.text = currScore;
     this._forepainter
         .setOption('fillStyle', BouncePainter.defaults.scoreColor)
-        .drawText(this._score);
+        .drawText(currScore);
     return this;
 };
 
 /**
  * Draws the game high score.
+ * @param {cog.Text} highScore - The high score of the player.
  * @return {BouncePainter} this
  */
 BouncePainter.prototype.drawHighScore = function(highScore) {
-    var painter = this._forepainter;
-
-    this._highScore.text = 'Best: ' + highScore + ' ';
-    // Change the font settings before calculating the text width.
-    painter.setOption(
-        'font', BouncePainter.defaults.highScoreFontSize + 'pt Calibri');
-    // Place the high score at the bottom right corner of the canvas.
-    this._highScore.x = painter.width - painter.getTextWidth(this._highScore)/2;
-    painter
+    this._forepainter
+        // Change the font setting before calculating the text width.
+        .setOption('font',
+            BouncePainter.defaults.highScoreFontSize + 'pt Calibri')
+        .setOption('textAlign', 'right')
+        .setOption('textBaseline', 'bottom')
         .setOption('fillStyle', BouncePainter.defaults.scoreColor)
-        .drawText(this._highScore)
+        .drawText(highScore)
         // Change the font settings back to the original ones.
         // drawHighScore is not expected to be called a lot, so this is fast.
+        .setOption('textAlign', 'center')
+        .setOption('textBaseline', 'middle')
         .setOption('font', BouncePainter.defaults.scoreFontSize + 'pt Calibri');
     return this;
 };
 
-BouncePainter.prototype._clearScore = function(which) {
-    var rect = this._rect,
-        score = this[which],
-        width = this._forepainter.getTextWidth(score),
+/**
+ * Erases the player's current score from the canvas.
+ * @param {cog.Text} currScore - The current score of the player.
+ * @return {BouncePainter} this
+ */
+BouncePainter.prototype.clearScore = function(currScore) {
+    var width = this._forepainter.getTextWidth(currScore),
         height = width * 1.5;
 
-    rect.x = Math.floor(score.x - width/2);
-    rect.y = Math.floor(score.y - height/2);
-    rect.width = Math.ceil(width);
-    rect.height = Math.ceil(height);
-    this._forepainter.clearRect(rect);
+    this._clearRect(Math.floor(currScore.x - width/2),
+                    Math.floor(currScore.y - height/2),
+                    Math.ceil(width),
+                    Math.ceil(height));
     return this;
 };
 
 /**
- * Erases the game score from the canvas.
+ * Erases the player's high score from the canvas.
+ * @param {cog.Text} highScore - The high score of the player.
  * @return {BouncePainter} this
  */
-BouncePainter.prototype.clearScore = function() {
-    this._clearScore('_score');
-    return this;
-};
+BouncePainter.prototype.clearHighScore = function(highScore) {
+    var width = this._forepainter.getTextWidth(highScore),
+        height = width * 1.5;
 
-/**
- * Erases the game score from the canvas.
- * @return {BouncePainter} this
- */
-BouncePainter.prototype.clearHighScore = function() {
-    this._clearScore('_highScore');
+    this._clearRect(Math.floor(highScore.x - width),
+                    Math.floor(highScore.y - height),
+                    Math.ceil(width),
+                    Math.ceil(height));
     return this;
 };
 
@@ -1014,7 +1020,7 @@ function makeBouncePainter(container, canvas) {
  * The main class of the game.
  * @param {canvas} canvas - The main canvas to draw the game on.
  * @param {cog.Circle} circle - The circle of the game.
- * @param {Array} shapes - The rest of the shapes.
+ * @param {Array.<cog.Shape>} shapes - The rest of the shapes.
  * @param {Object} opt - A configuration object.
  *    This object may specify any of the following attributes:
  *      {AbstractBouncer} [bouncer=NormalBouncer] -
@@ -1046,11 +1052,19 @@ function Bounce(canvas, circle, shapes, opt) {
     this._state = Bounce._State.READY;
     this._elapsedmillisecs = 0;
     this._originalCoords = [];
+    this._score = new cog.Text(
+        Math.floor(canvas.width / 2),
+        3 * Math.floor(canvas.height / 4),
+        this.score.toString());
+    this._highScore = new cog.Text(
+        canvas.width,
+        canvas.height);
 
     this._saveOriginalPos();
-    this.painter.draw(
-        circle, shapes, this.score, this.storageManager.getHighScore());
-    this.inputDaemon.start()
+    this._formatHighScore();
+    this.painter.draw(circle, shapes, this._score, this._highScore);
+    this.inputDaemon
+        .start()
         .trigger('create');
 }
 
@@ -1068,6 +1082,14 @@ Bounce._State = {
 if (Object.freeze) {
     Object.freeze(Bounce._State);
 }
+
+/**
+ *
+ * @protected
+ */
+Bounce.prototype._formatHighScore = function() {
+    this._highScore.text = 'Best: ' + this.storageManager.getHighScore() + ' ';
+};
 
 /**
  * .
@@ -1121,7 +1143,9 @@ Bounce.prototype.destroy = function() {
  * Saves the current score if it is a new best.
  */
 Bounce.prototype.saveScore = function() {
-    this.storageManager.updateCurrScore(this.score);
+    if (this.storageManager.updateCurrScore(this.score)) {
+        this._formatHighScore();
+    }
 };
 
 /**
@@ -1150,7 +1174,7 @@ Bounce.prototype._play = function() {
                 shapes = self.shapes,
                 painter = self.painter,
                 bouncer = self._bouncer,
-                dt, pos, score;
+                dt, pos;
 
             // Place the rAF before everything to assure as
             // close to 60fps with the setTimeout fallback.
@@ -1180,12 +1204,12 @@ Bounce.prototype._play = function() {
                 }
 
                 // No need to redraw the score if it hasn't changed.
-                score = self.score;
-                if (prevscore !== score) {
+                if (prevscore !== self.score) {
+                    self._score.text = self.score;
                     painter
-                        .clearScore()
-                        .drawScore(score);
-                    prevscore = score;
+                        .clearScore(self._score)
+                        .drawScore(self._score);
+                    prevscore = self.score;
                 }
             }
         }(timestamp));
@@ -1312,11 +1336,11 @@ Bounce.prototype._reset = function(event, autostart) {
         self._repositionShapes();
         self._elapsedmillisecs = 0;
         self._state = Bounce._State.READY;  // _state should change inside rAF.
+        self._score.text = self.score.toString();
         self.painter
             .hidePauseScreen()
             .clear()
-            .draw(self.circle, self.shapes, self.score,
-                  self.storageManager.getHighScore());
+            .draw(self.circle, self.shapes, self._score, self._highScore);
         self.inputDaemon
             .restart()
             .trigger(event);
