@@ -248,6 +248,7 @@ BouncePainter.prototype.drawScore = function(currScore) {
  */
 BouncePainter.prototype.drawHighScore = function(highScore) {
     this._forepainter
+        .save()
         // Change the font setting before calculating the text width.
         .setOption('font',
             BouncePainter.defaults.highScoreFontSize + 'pt Calibri')
@@ -257,9 +258,7 @@ BouncePainter.prototype.drawHighScore = function(highScore) {
         .drawText(highScore)
         // Change the font settings back to the original ones.
         // drawHighScore is not expected to be called a lot, so this is fast.
-        .setOption('textAlign', 'center')
-        .setOption('textBaseline', 'middle')
-        .setOption('font', BouncePainter.defaults.scoreFontSize + 'pt Calibri');
+        .restore();
     return this;
 };
 
@@ -1205,10 +1204,9 @@ Bounce.prototype._play = function() {
 
                 // No need to redraw the score if it hasn't changed.
                 if (prevscore !== self.score) {
+                    painter.clearScore(self._score);
                     self._score.text = self.score;
-                    painter
-                        .clearScore(self._score)
-                        .drawScore(self._score);
+                    painter.drawScore(self._score);
                     prevscore = self.score;
                 }
             }
