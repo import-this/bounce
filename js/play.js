@@ -28,7 +28,7 @@
             game.start();
         }
     }
-    
+
     function startOnTouchInput(event) {
         /*jshint validthis:true */
         event.preventDefault();
@@ -65,6 +65,19 @@
         return game;
     }
 
+    function resize() {
+        /*
+         * Make sure a game is already created when this handler is called.
+         */
+        fitCanvas(canvas);
+        // Perfoming an actual resize is meaningless for this fast-paced
+        // game (and a lot of work, too), so simply create a brand-new one.
+        game.destroy();
+        game = newGame(canvas);
+        // addEventListener inside this discards potential duplicates.
+        registerStartOnInput();
+    }
+
     // Global exception handler.
     // Note that this does not catch exceptions from event handlers
     // (since these are executed in a separate context).
@@ -83,16 +96,8 @@
         fitCanvas(canvas);
         game = newGame(canvas);
 
-        window.addEventListener('resize', function resize() {
-            // Make sure a game is already created when this handler is called.
-            fitCanvas(canvas);
-            // Perfoming an actual resize is meaningless for this fast-paced
-            // game (and a lot of work, too), so simply create a brand-new one.
-            game.destroy();
-            game = newGame(canvas);
-            // addEventListener inside this discards potential duplicates.
-            registerStartOnInput();
-        }, false);
+        window.addEventListener('resize', resize, false);
+        window.addEventListener('orientationchange', resize, false);
 
         // TODO: Decide if this will be used eventually.
         /*function getDifficulty() {

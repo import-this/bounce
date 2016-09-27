@@ -4,6 +4,7 @@
  * http://stackoverflow.com/questions/1664785/resize-html5-canvas-to-fit-window
  * http://www.thefutureoftheweb.com/blog/100-percent-height-interface
  */
+
 * {
 	margin: 0;
 	padding: 0;
@@ -14,7 +15,7 @@ html, body {
 	overflow: hidden;	/* no scrollbar */
 }
 canvas {
-	display: block;
+	display: block;		/* no scrollbar */
 }
 
 /*

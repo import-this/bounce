@@ -1,127 +1,133 @@
 <!DOCTYPE html>
 <html manifest="cache.appcache">
-	<head>
-		<meta charset="utf-8">
+    <head>
+        <meta charset="utf-8">
 
-		<link rel="stylesheet" type="text/css" href="css/bounce.css">
+        <!-- Mobile devices magic. -->
+        <!-- <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320"> -->
+        <meta name="viewport" content="width=device-width, height=device-height, minimal-ui,
+            initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
 
-		<script type="text/javascript">
-			window.onerror = function() {
-				var errormsg = document.getElementById('error-msg');
-				if (errormsg) {
-					errormsg.style.display = 'table';
-				}
-			};
-		</script>
+        <link rel="stylesheet" type="text/css" href="css/bounce.css">
 
-		<!-- https://rawgit.com/ -->
-		<!-- TODO: Change to production mode -->
-		<script type="text/javascript" src="//rawgit.com/import-this/cog/master/cog.js"></script>
-		<script type="text/javascript" src="js/bounce.js"></script>
+        <script type="text/javascript">
+            window.onerror = function() {
+                var errormsg = document.getElementById('error-msg');
+                if (errormsg) {
+                    errormsg.style.display = 'table';
+                }
+            };
+        </script>
 
-		<title>Bounce</title>
-	</head>
-	<body>
-		<div>
-			<div>
-				<canvas id="bounce">
-					Bounce is an HTML5 application. Unfortunately, your browser
-					does not seem to support it. Please upgrade to a modern one.
-				</canvas>
-			</div>
-			<!-- TODO: Fix menu -->
-			<div id="start-menu" class="menu">
-				<div class="middle">
-					<h2>Bounce</h2>
-					<p>
-						Don't let them catch you!
-					</p>
-					<!--<h2>Choose difficulty</h2>
-					<ol>
-						<li tabindex="1">You could as well be dead.</li>
-						<li tabindex="2">Meh.</li>
-						<li tabindex="3">Ok.</li>
-						<li tabindex="4">Damn.</li>
-						<li tabindex="5">Bots Only.</li>
-					</ol>-->
-					<div id="controls">
-						<h3>How to play</h3>
-						<p>
-							Click anywhere and drag the mouse to move the
-							circle on the top surface.<br />
-							Don't touch the walls and avoid the moving shapes
-							for as long as you can.
-						</p>
-						<h3>Keyboard Shotcuts</h3>
-						<table>
-							<thead>
-								<tr>
-									<th>Action</th>
-									<th>Key</th>
-									<th>Alt Key</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Pause/Resume</td>
-									<td>Space</td>
-									<td>P</td>
-								</tr>
-								<tr>
-									<td>Restart</td>
-									<td>R</td>
-									<td>N/A</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<div>
-						<p>
-							An HTML5 clone of <a href="https://itunes.apple.com/us/app/insanity!/id892935435">Insanity!</a>
-							by Artem Rakhmatulin.<br />
-						</p>
-						<p>
+        <!-- https://rawgit.com/ -->
+        <!-- TODO: Change to production mode -->
+        <script type="text/javascript" src="//rawgit.com/import-this/cog/master/cog.js"></script>
+        <script type="text/javascript" src="js/bounce.js"></script>
 
-						</p>
-					</div>
-					<div>
-						<button type="button" id="start-button">
-							Got it, let's play!
-						</button>
-					</div>
-				</div>
-			</div>
-			<div id="end-menu" class="menu">
-				<div class="middle">
-					<h2>Game Over</h2>
-					<table id="scores">
-						<tr>
-							<td>Score: <span id="curr-score"></span></td>
-						</tr>
-						<tr>
-							<td>Best: <span id="best-score"></span></td>
-						</tr>
-						<tr>
-							<td>Times played in this session: <span id="times"></span></td>
-						</tr>
-						<tr>
-							<td>Total times played: <span id="total-times"></span></td>
-						</tr>
-					</table>
-					<div>
-						<button type="button" id="restart-button">
-							Try Again!
-						</button>
-					</div>
-				</div>
-			</div>
-			<div id="error-msg" class="msg">
-				<div class="middle">
-					Oops! Something went wrong. Sorry about that.<br />
-					Please refresh the page and play again.
-				</div>
-			</div>
-			<script type="text/javascript" src="js/play.js"></script>
-		</div>
-	</body>
+        <title>Bounce</title>
+    </head>
+    <body>
+        <div>
+            <div>
+                <canvas id="bounce">
+                    Bounce is an HTML5 application. Unfortunately, your browser
+                    does not seem to support it. Please upgrade to a modern one.
+                </canvas>
+            </div>
+            <!-- TODO: Fix menu -->
+            <div id="start-menu" class="menu">
+                <div class="middle">
+                    <h2>Bounce</h2>
+                    <p>
+                        Don't let them catch you!
+                    </p>
+                    <!--<h2>Choose difficulty</h2>
+                    <ol>
+                        <li tabindex="1">You could as well be dead.</li>
+                        <li tabindex="2">Meh.</li>
+                        <li tabindex="3">Ok.</li>
+                        <li tabindex="4">Damn.</li>
+                        <li tabindex="5">Bots Only.</li>
+                    </ol>-->
+                    <div id="controls">
+                        <h3>How to play</h3>
+                        <p>
+                            Click anywhere and drag the mouse to move the
+                            circle on the top surface.<br />
+                            Don't touch the walls and avoid the moving shapes
+                            for as long as you can.
+                        </p>
+                        <h3>Keyboard Shotcuts</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Key</th>
+                                    <th>Alt Key</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Pause/Resume</td>
+                                    <td>Space</td>
+                                    <td>P</td>
+                                </tr>
+                                <tr>
+                                    <td>Restart</td>
+                                    <td>R</td>
+                                    <td>N/A</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <p>
+                            An HTML5 clone of <a href="https://itunes.apple.com/us/app/insanity!/id892935435">Insanity!</a>
+                            by Artem Rakhmatulin.
+                        </p>
+                        <p>
+
+                        </p>
+                    </div>
+                    <div>
+                        <button type="button" id="start-button">
+                            Got it, let's play!
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="end-menu" class="menu">
+                <div class="middle">
+                    <h2>Game Over</h2>
+                    <table id="scores">
+                        <tr>
+                            <td>Score: <span id="curr-score"></span></td>
+                        </tr>
+                        <tr>
+                            <td>Best: <span id="best-score"></span></td>
+                        </tr>
+                        <tr>
+                            <td>Times played in this session: <span id="times"></span></td>
+                        </tr>
+                        <tr>
+                            <td>Total times played: <span id="total-times"></span></td>
+                        </tr>
+                    </table>
+                    <div>
+                        <button type="button" id="restart-button">
+                            Try Again!
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="error-msg" class="msg">
+                <div class="middle">
+                    Oops! Something went wrong. Sorry about that.<br />
+                    Please refresh the page and play again.
+                </div>
+            </div>
+            <script type="text/javascript" src="js/play.js"></script>
+        </div>
+    </body>
 </html>

@@ -85,12 +85,12 @@ function BouncePainter(backpainter, forepainter, pausepainter) {
     this._forepainter.setOptions({
         textAlign: 'center',
         textBaseline: 'middle',
-        font: BouncePainter.defaults.scoreFontSize + 'pt Calibri'
+        font: BouncePainter.defaults.scoreFont
     });
 }
 
 /**
- * BouncePainter default options.
+ * BouncePainter default drawing options.
  * @const
  */
 BouncePainter.defaults = {
@@ -100,8 +100,8 @@ BouncePainter.defaults = {
     backgroundTopColor: '#383838',
     backgroundBottomColor: '#D8D8D8',
     pauseColor: 'rgba(150,150,150,0.8)',
-    scoreFontSize: 50,
-    highScoreFontSize: 40
+    scoreFont: '50pt Calibri',
+    highScoreFont: '40pt Calibri'
 };
 
 if (Object.seal) {
@@ -130,7 +130,7 @@ BouncePainter.prototype._clearRect = function(x, y, width, height) {
  * Draws all the elements of the game.
  * @param {cog.Circle} circle - The circle of the game.
  * @param {Array.<cog.Shape>} shapes - The shapes of the game.
- * @param {string} score - The curent score of the player in the game.
+ * @param {string} score - The current score of the player in the game.
  * @param {string} highScore - The best score of the player in the game.
  */
 BouncePainter.prototype.draw = function(circle, shapes, score, highScore) {
@@ -250,12 +250,11 @@ BouncePainter.prototype.drawHighScore = function(highScore) {
     this._forepainter
         .save()
         // Change the font setting before calculating the text width.
-        .setOption('font',
-            BouncePainter.defaults.highScoreFontSize + 'pt Calibri')
-        .setOption('textAlign', 'right')
-        .setOption('textBaseline', 'bottom')
-        .setOption('fillStyle', BouncePainter.defaults.scoreColor)
-        .drawText(highScore)
+            .setOption('font', BouncePainter.defaults.highScoreFont)
+            .setOption('textAlign', 'right')
+            .setOption('textBaseline', 'bottom')
+            .setOption('fillStyle', BouncePainter.defaults.scoreColor)
+            .drawText(highScore)
         // Change the font settings back to the original ones.
         // drawHighScore is not expected to be called a lot, so this is fast.
         .restore();
@@ -318,6 +317,7 @@ BouncePainter.prototype.hidePauseScreen = function() {
  * http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
  * http://developer.mozilla.org/en-US/docs/Web/API/Element.getBoundingClientRect
  * http://stackoverflow.com/a/11396681/1751037
+ * http://msdn.microsoft.com/en-us/library/ie/hh673557%28v=vs.85%29.aspx
  */
 
 /**
@@ -398,7 +398,7 @@ function BounceInputDaemon(element, circle) {
 
     /*********************** Handlers for touch events. ***********************/
 
-    // Touch events may give fractional coordinates, so round them up.
+    // Touch events may give fractional coordinates, so round them.
     if (global.navigator.msPointerEnabled) {    // Internet Explorer
         touchmove = function(event) {
             var rect = self._boundingRect,
@@ -570,6 +570,15 @@ AbstractBouncer.prototype.hasCollision = function() {
 
 /**
  *
+ * @return {boolean} true if
+ */
+AbstractBouncer.prototype.isBusted = function() {
+    return this.isOutOfBounds() || this.hasCollision();
+};
+
+
+/**
+ *
  * Pun intended.
  * @constructor
  * @abstract
@@ -684,7 +693,8 @@ Bouncer.prototype.hasCollision = function() {
  * @augments Bouncer
  */
 function DumbBouncer(circle, shapes, width, height) {
-    var speed = 0.00035 * Math.round((width+height) / 2), i, len;
+    var speedfactor = 0.00035,
+        speed = speedfactor * Math.round((width+height) / 2), i, len;
 
     Bouncer.call(this, circle, shapes, width, height);
 
@@ -752,7 +762,8 @@ DumbBouncer.prototype.isOutOfBounds = returnFalse;
  * @augments Bouncer
  */
 function EasyBouncer(circle, shapes, width, height) {
-    var speed = 0.00045 * Math.round((width+height) / 2), i, len;
+    var speedfactor = 0.00045,
+        speed = speedfactor * Math.round((width+height) / 2), i, len;
 
     Bouncer.call(this, circle, shapes, width, height);
 
@@ -1032,6 +1043,7 @@ function makeBouncePainter(container, canvas) {
  *          The object responsible for saving the game stats.
  *      {cog.AppCacheManager} [appCacheManager=cog.AppCacheManager] -
  *          The object responsible for the application cache.
+ * @constructor
  */
 function Bounce(canvas, circle, shapes, opt) {
     var container = createContainer(canvas);
@@ -1197,7 +1209,7 @@ Bounce.prototype._play = function() {
                 bouncer.moveShapes(dt);
                 painter.drawShapes(shapes);
 
-                if (bouncer.isOutOfBounds() || bouncer.hasCollision()) {
+                if (bouncer.isBusted()) {
                     self.stop();
                     return;
                 }
@@ -1446,8 +1458,7 @@ function bounce(canvas, difficulty) {
             bouncer = new EasyBouncer(circle, shapes, width, height);
             break;
         case 3:
-            /* falls through */
-        default:    // Default difficulty: Normal.
+        default:    // Default difficulty: Level 3 - Normal.
             bouncer = new NormalBouncer(circle, shapes, width, height);
             break;
         case 4:
