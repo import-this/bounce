@@ -1,92 +1,141 @@
-/*
- * Make the canvas fullscreen.
- * http://stackoverflow.com/questions/4288253/html5-canvas-100-width-height-of-viewport
- * http://stackoverflow.com/questions/1664785/resize-html5-canvas-to-fit-window
- * http://www.thefutureoftheweb.com/blog/100-percent-height-interface
- */
-
 * {
-	margin: 0;
-	padding: 0;
+    margin: 0;
+    padding: 0;
 }
-html, body {
-	width: 100%;
-	height: 100%;
-	overflow: hidden;	/* no scrollbar */
+html, body, #bounce-canvas {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;   /* no scrollbar */
+}
+body {
+    font-family: Helvetica, Arial;
+    font-size: 0.95em;
+    background-color: rgb(16, 16, 16);
 }
 canvas {
-	display: block;		/* no scrollbar */
+    -webkit-box-shadow: 0px 0px 1px 1px rgb(50, 50, 50);
+            box-shadow: 0px 0px 1px 1px rgb(50, 50, 50);
 }
 
-/*
- * http://stackoverflow.com/questions/396145/how-to-vertically-center-a-div-for-all-browsers
- */
-.menu, .msg {
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-	display: table;
-	position: fixed;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	z-index: 3;
-	background-color: #bbb;
-	opacity: 0.9;
-	color: #111;
-	text-align: center;
-	font-size: large;
+#bounce {
+    font-size: 1.75em;
+    font-weight: bold;
+    text-shadow: 0px 0px 1px rgb(0, 0, 0);
 }
-.middle {
-	display: table-cell;
-	vertical-align: middle;
+#description div {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 3px;
+    text-shadow: 0px 0px 0.25px rgb(0, 0, 0);
 }
-.middle table {
-	display: inline-block;
+#start-menu, #end-menu, #center {
+    border-radius: 8px;
 }
-th, td {
-	padding: 0px 2px;
-}
-#controls, #scores {
-	display: inline-block;
-}
-#end-menu, #error-msg {
-	display: none;
+#start-menu, #end-menu {
+    padding: 12px 18px;
+    text-align: center;
+
+    background-color: rgba(47, 142, 204, 0.9);
+    /* background-color: rgba(3, 120, 188, 0.9); */
 }
 #end-menu {
-	opacity: 0.8;
-	background-color: #ccc;
+    display: none;
+    min-width: 250px;
+}
+#scores {
+    width: 100%;
+}
+#center {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    text-align: center;
+
+    -webkit-box-shadow: 0px 0px 6px 1px rgb(47, 142, 204);
+            box-shadow: 0px 0px 6px 1px rgb(47, 142, 204);
+}
+#more {
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 4px 8px;
+
+    color: rgb(235, 251, 255);
+    background-color: rgba(40, 40, 40, 0.75);
+    border-bottom-right-radius: 6px;
+
+    -webkit-box-shadow: 0px 0px 6px 1px rgb(128, 128, 128);
+            box-shadow: 0px 0px 6px 1px rgb(128, 128, 128);
+}
+#bottom {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 4px 8px;
+
+    font-size: 0.96em;
+    color: rgb(235, 251, 255);
+    background-color: rgba(40, 40, 40, 0.75);
+    border-top-left-radius: 6px;
+
+    -webkit-box-shadow: 0px 0px 6px 1px rgb(128, 128, 128);
+            box-shadow: 0px 0px 6px 1px rgb(128, 128, 128);
+}
+#more a, #bottom a {
+    color: rgb(235, 251, 255);
+    text-decoration: none;
+}
+#top {
+    position: fixed;
+    top: 4px;
+    right: 4px;
+}
+#top > div {
+    vertical-align: top;
+    /* Override default FB display style for mobile. */
+    display: inline-block;
+}
+#top > iframe {
+    /* Use this instead of frameborder=0. */
+    border: none;
 }
 
-ol {
-	list-style-type: none;
+a {
+    color: rgb(235, 251, 255);
 }
-
+th, td {
+    padding: 0px 2px;
+}
 button {
-	background: #1c7dbd;
-	background: -webkit-gradient(linear, left top, left bottom, from(#3497d9), to(#1c7dbd));
-	background: -webkit-linear-gradient(top, #3497d9, #1c7dbd);
-	background: -moz-linear-gradient(top, #3497d9, #1c7dbd);
-	background: -ms-linear-gradient(top, #3497d9, #1c7dbd);
-	background: -o-linear-gradient(top, #3497d9, #1c7dbd);
-	padding: 5.5px 11px;
-	-webkit-border-radius: 5px;
-	-moz-border-radius: 5px;
-	border-radius: 5px;
-	-webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
-	-moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
-	box-shadow: rgba(0,0,0,1) 0 1px 0;
-	text-shadow: rgba(0,0,0,.4) 0 1px 0;
-	color: white;
-	font-size: 14px;
-	text-decoration: none;
-	vertical-align: middle;
+    margin: 8px 0px 0px;
+    padding: 3px 30px;
+
+    font-size: 1.12em;
+    color: rgb(235, 251, 255);
+    text-shadow: 0px 0px 4px rgb(230, 251, 255);
+
+    background-color: rgb(34, 34, 34);
+    background: -webkit-linear-gradient(top, rgb(70, 70, 70), rgb(34, 34, 34));
+    background:    -moz-linear-gradient(top, rgb(70, 70, 70), rgb(34, 34, 34));
+    background:     -ms-linear-gradient(top, rgb(70, 70, 70), rgb(34, 34, 34));
+    background:      -o-linear-gradient(top, rgb(70, 70, 70), rgb(34, 34, 34));
+    background:   linear-gradient(to bottom, rgb(70, 70, 70), rgb(34, 34, 34));
+
+    border: 2px solid rgb(34, 34, 34);
+    border-radius: 6px;
+
+    -webkit-box-shadow: 0px 0px 4px 2px rgb(34, 34, 34);
+            box-shadow: 0px 0px 4px 2px rgb(34, 34, 34);
+
+    -webkit-transition-duration: 0.2s;
+       -moz-transition-duration: 0.2s;
+         -o-transition-duration: 0.2s;
+            transition-duration: 0.2s;
 }
 button:hover {
-	background: #257eba;
-	color: #ffffff;
-}
-button:active {
-	background: #2e7cb0;
+    color: rgb(47, 142, 204);
+    text-shadow: -1px 0px 2px rgb(47, 142, 204),
+                  1px 0px 2px rgb(47, 142, 204);
 }

@@ -1,7 +1,8 @@
 Bounce
 ======
 
-An HTML5 clone of [Artem Rakhmatulin's Insanity!](https://itunes.apple.com/us/app/insanity!/id892935435)
+An HTML5 clone of a now pretty old version of
+[Artem Rakhmatulin's Insanity!](https://itunes.apple.com/us/app/insanity!/id892935435)
 
 [You can play it here!](http://import-this.github.io/bounce/)
 
