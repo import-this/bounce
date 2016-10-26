@@ -1,20 +1,22 @@
 CACHE MANIFEST
 # Update the next line after a change is made.
-# 2016-09-27:v1.0.4
+# 2016-09-27:v2.0.0
 
 # Do NOT use backslashes before relative paths.
 
-# Main page
+# HTML
 index.html
+about.html
+terms.html
+privacy.html
 
 # CSS
 css/bounce.css
 
 # JavaScript
-# TODO: Change to production mode
-//rawgit.com/import-this/cog/master/cog.js
+js/dataview-polyfill.js
+js/phaser-bounce.min.js
 js/bounce.js
-js/play.js
 
 # Resources that require the user to be online.
 NETWORK:

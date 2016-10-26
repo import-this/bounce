@@ -1,133 +1,199 @@
 <!DOCTYPE html>
 <html manifest="cache.appcache">
     <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
+
+        <meta name="author" content="import-this">
+        <meta name="application-name" content="Bounce">
+        <meta name="description" content="A simple HTML5 game inspired by an old version of
+            Artem Rakhmatulin's Insanity! - #Bounce">
+        <meta name="keywords" content="Bounce, clone, game, 2D, HTML5, Phaser,
+            import-this, github, github.io, open source">
+        <meta name="robots" content="index, follow">
 
         <!-- Mobile devices magic. -->
-        <!-- <meta name="HandheldFriendly" content="True">
-        <meta name="MobileOptimized" content="320"> -->
         <meta name="viewport" content="width=device-width, height=device-height, minimal-ui,
             initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
 
-        <link rel="stylesheet" type="text/css" href="css/bounce.css">
+        <!-- Open Graph for Facebook. -->
+        <meta property="og:url" content="https://import-this.github.io/bounce/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Bounce" />
+        <meta property="og:site_name" content="Bounce" />
+        <meta property="og:image" content="https://import-this.github.io/bounce/img/wallpaper.png" />
+        <meta property="og:description" content="A simple HTML5 game inspired by an old version of
+            Artem Rakhmatulin's Insanity! - #Bounce" />
 
-        <script type="text/javascript">
-            window.onerror = function() {
-                var errormsg = document.getElementById('error-msg');
-                if (errormsg) {
-                    errormsg.style.display = 'table';
-                }
-            };
-        </script>
-
-        <!-- https://rawgit.com/ -->
-        <!-- TODO: Change to production mode -->
-        <script type="text/javascript" src="//rawgit.com/import-this/cog/master/cog.js"></script>
-        <script type="text/javascript" src="js/bounce.js"></script>
+        <!-- Google Search Console verification method. -->
+        <meta name="google-site-verification" content="l3FLvijRzmzAxnDb7k-KtuYtiKbbELUQLsvJUs1YOs0" />
 
         <title>Bounce</title>
+
+        <link rel="stylesheet" type="text/css" href="css/bounce.css">
+
+        <!-- ArrayBuffer and DataView support for IE9, required by P2 Physics. -->
+        <script type="text/javascript" src="js/dataview-polyfill.js"></script>
+        <script type="text/javascript" src="js/phaser-bounce.min.js"></script>
+        <script type="text/javascript" src="js/bounce.js"></script>
+
+        <!-- Google Analytics -->
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-86406339-1', 'auto');
+            ga('send', 'pageview');
+        </script>
     </head>
     <body>
-        <div>
-            <div>
-                <canvas id="bounce">
-                    Bounce is an HTML5 application. Unfortunately, your browser
-                    does not seem to support it. Please upgrade to a modern one.
-                </canvas>
-            </div>
-            <!-- TODO: Fix menu -->
-            <div id="start-menu" class="menu">
-                <div class="middle">
-                    <h2>Bounce</h2>
-                    <p>
-                        Don't let them catch you!
-                    </p>
-                    <!--<h2>Choose difficulty</h2>
-                    <ol>
-                        <li tabindex="1">You could as well be dead.</li>
-                        <li tabindex="2">Meh.</li>
-                        <li tabindex="3">Ok.</li>
-                        <li tabindex="4">Damn.</li>
-                        <li tabindex="5">Bots Only.</li>
-                    </ol>-->
-                    <div id="controls">
-                        <h3>How to play</h3>
-                        <p>
-                            Click anywhere and drag the mouse to move the
-                            circle on the top surface.<br />
-                            Don't touch the walls and avoid the moving shapes
-                            for as long as you can.
-                        </p>
-                        <h3>Keyboard Shotcuts</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Action</th>
-                                    <th>Key</th>
-                                    <th>Alt Key</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Pause/Resume</td>
-                                    <td>Space</td>
-                                    <td>P</td>
-                                </tr>
-                                <tr>
-                                    <td>Restart</td>
-                                    <td>R</td>
-                                    <td>N/A</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <p>
-                            An HTML5 clone of <a href="https://itunes.apple.com/us/app/insanity!/id892935435">Insanity!</a>
-                            by Artem Rakhmatulin.
-                        </p>
-                        <p>
+        <!-- Facebook JavaScript SDK -->
+        <div id="fb-root"></div>
+        <script>
+            (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.8";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+        </script>
 
-                        </p>
+        <div id="bounce-canvas">
+            <!-- Phaser will insert the canvas here. -->
+        </div>
+        <div id="menu">
+            <div id="top">
+                <!-- Facebook Like and Share Buttons -->
+                <div class="fb-like" data-href="https://www.facebook.com/Bounce-592913334247877/" data-layout="button" data-action="like" data-size="small" data-show-faces="false" data-share="true"></div>
+                <!-- GitHub Star Button (https://ghbtns.com/ with modifications) -->
+                <iframe src="https://ghbtns.com/github-btn.html?user=import-this&repo=bounce&type=star" scrolling="0" width="50" height="20"></iframe>
+            </div>
+            <div id="center">
+                <div id="start-menu">
+                    <h2 id="bounce">Bounce</h2>
+                    <div id="description">
+                        <div>and don't let them catch you!</div>
+                        A simple HTML5 game inspired by a now pretty old version of
+                        <a href="https://itunes.apple.com/us/app/insanity!/id892935435">Insanity!</a>
+                    </div>
+                    <div id="instructions">
+                        Click anywhere and drag the mouse to move the circle.<br />
+                        Avoid the moving shapes for as long as you can.
+                    </div>
+                    <div id="ui">
+                        <form>
+                            <strong>UI:</strong>
+                            <label>
+                                <input id="mouse" type="radio" name="ui" value="mouse">Mouse
+                            </label>
+                            <label>
+                                <input id="touch" type="radio" name="ui" value="touch">Touch
+                            </label>
+                        </form>
                     </div>
                     <div>
-                        <button type="button" id="start-button">
-                            Got it, let's play!
-                        </button>
+                        <button type="button" id="start-button">Play</button>
                     </div>
                 </div>
-            </div>
-            <div id="end-menu" class="menu">
-                <div class="middle">
+                <div id="end-menu">
                     <h2>Game Over</h2>
                     <table id="scores">
-                        <tr>
-                            <td>Score: <span id="curr-score"></span></td>
-                        </tr>
-                        <tr>
-                            <td>Best: <span id="best-score"></span></td>
-                        </tr>
-                        <tr>
-                            <td>Times played in this session: <span id="times"></span></td>
-                        </tr>
-                        <tr>
-                            <td>Total times played: <span id="total-times"></span></td>
-                        </tr>
+                        <tr><td>Score:          <span id="curr-score"></span>   </td></tr>
+                        <tr><td>High Score:     <span id="high-score"></span>   </td></tr>
+                        <tr><td>Times played:   <span id="times"></span>        </td></tr>
                     </table>
                     <div>
-                        <button type="button" id="restart-button">
-                            Try Again!
-                        </button>
+                        <button type="button" id="restart-button">Try Again</button>
                     </div>
                 </div>
             </div>
-            <div id="error-msg" class="msg">
-                <div class="middle">
-                    Oops! Something went wrong. Sorry about that.<br />
-                    Please refresh the page and play again.
-                </div>
+            <div id="bottom">
+                <a href="about.html" title="About the game">About</a> |
+                <a href="terms.html" title="About usage rules">Terms of Use</a> |
+                <a href="privacy.html" title="About collected info">Privacy Policy</a>
             </div>
-            <script type="text/javascript" src="js/play.js"></script>
         </div>
+
+        <script type="text/javascript">
+            (function(document, Bounce) {
+                function showStartMenu() {
+                    document.getElementById('start-menu').style.display = 'block';
+                    document.getElementById('menu').style.display = 'block';
+                }
+                function hideStartMenu() {
+                    document.getElementById('menu').style.display = 'none';
+                    document.getElementById('start-menu').style.display = 'none';
+                }
+
+                function showEndMenu() {
+                    document.getElementById('curr-score').innerHTML = game.bounce.score.toString();
+                    document.getElementById('high-score').innerHTML = Bounce.storage.getHighScore();
+                    document.getElementById('times').innerHTML = Bounce.storage.getTimesPlayed();
+
+                    document.getElementById('end-menu').style.display = 'block';
+                    document.getElementById('menu').style.display = 'block';
+                }
+                function hideEndMenu() {
+                    document.getElementById('menu').style.display = 'none';
+                    document.getElementById('end-menu').style.display = 'none';
+                }
+
+                var game, ui, radioButtons;
+
+                // Select the corresponding radio button
+                ui = window.localStorage.getItem('ui');
+                if (ui) {
+                    // based on previous settings
+                    document.getElementById(ui).checked = true;
+                } else {
+                    // or arbitrarily. (Phaser's device detection doesn't work.)
+                    ui = 'mouse';
+                    document.getElementById(ui).checked = true;
+                }
+
+                // Let the game begin!
+                game = Bounce.play('bounce-canvas', {
+                    onMainMenuOpen: showStartMenu,
+                    onEndMenuOpen: showEndMenu,
+                    isMouse: (ui === 'mouse')
+                });
+
+                // Handle UI changes on the fly.
+                function radioChangeHandler(event) {
+                    window.localStorage.setItem('ui', this.value);
+                    game.bounce.isMouse = (this.value === 'mouse');
+                    game.state.start('Preloader');
+                }
+                radioButtons = document.querySelectorAll('input[name="ui"]');
+                Array.prototype.forEach.call(radioButtons, function addEventHandler(radio) {
+                    radio.addEventListener('change', radioChangeHandler);
+                });
+
+                // Setup UI buttons.
+                document.getElementById('start-button').addEventListener('click', function(event) {
+                    hideStartMenu();
+                    game.state.start('Game');
+                }, false);
+                document.getElementById('restart-button').addEventListener('click', function(event) {
+                    hideEndMenu();
+                    game.state.start('Game');
+                }, false);
+            }(document, Bounce));
+        </script>
+
+        <!-- Adblock detection -->
+        <script type="text/javascript" src="js/ads.js"></script>
+        <script type="text/javascript">
+            (function() {
+                if (!window.noAdblock) {
+                    // Adblock detected!
+
+                } else {
+
+                }
+            }());
+        </script>
     </body>
 </html>
