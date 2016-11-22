@@ -1085,11 +1085,12 @@ Bounce.play = function play(parent, config) {
         onEndMenuOpen: noop,
         isMouse: false
     }, config),
-    // Phaser will use the best renderer.
     game = new Phaser.Game({
         width: (opts.isMouse) ? NATIVE_WIDTH : NATIVE_HEIGHT,
         height: (opts.isMouse) ? NATIVE_HEIGHT : NATIVE_WIDTH,
         parent: parent,
+        // I've got 99 problems and WebGL is one. :/
+        renderer: Phaser.CANVAS,
         //antialias: false    // Disable antialiasing for crisp/pixelated scaling.
     });
 
