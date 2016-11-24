@@ -180,7 +180,25 @@
                     game.state.start('Game');
                 }, false);
                 document.getElementById('restart-button').addEventListener('click', function(event) {
+                    function clearSelection() {
+                        if (window.getSelection) {
+                            if (window.getSelection().empty) {                  // Chrome
+                                window.getSelection().empty();
+                            } else if (window.getSelection().removeAllRanges) { // Firefox
+                                window.getSelection().removeAllRanges();
+                            }
+                        } else if (document.selection) {                        // IE
+                            document.selection.empty();
+                        }
+                    }
+
                     hideEndMenu();
+                    // Dragging on canvas may have caused html selection when the
+                    // end menu pops up, since the player moves the mouse while it
+                    // is still down and the canvas stops receiving input. So, clear
+                    // the selection so as to not move it when the player starts
+                    // dragging again.
+                    clearSelection();
                     game.state.start('Game');
                 }, false);
             }(document, Bounce));
