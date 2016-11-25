@@ -85,16 +85,29 @@
                         Click anywhere and drag the mouse to move the circle.<br />
                         Avoid the moving shapes for as long as you can.
                     </div>
+                    <div id="mutators">
+                        <strong>Mutators:</strong>
+                        <label>
+                            <input id="fast" type="checkbox" name="mutator" value="fast">Fast
+                        </label>
+                        <label>
+                            <input id="speedup" type="checkbox" name="mutator" value="speedup">Speedup
+                        </label>
+                        <label>
+                            <input id="five" type="checkbox" name="mutator" value="five">Five
+                        </label>
+                        <!-- <label>
+                            <input id="big" type="checkbox" name="mutator" value="big">Big
+                        </label> -->
+                    </div>
                     <div id="ui">
-                        <form>
-                            <strong>UI:</strong>
-                            <label>
-                                <input id="mouse" type="radio" name="ui" value="mouse">Mouse
-                            </label>
-                            <label>
-                                <input id="touch" type="radio" name="ui" value="touch">Touch
-                            </label>
-                        </form>
+                        <strong>UI:</strong>
+                        <label>
+                            <input id="mouse" type="radio" name="ui" value="mouse">Mouse
+                        </label>
+                        <label>
+                            <input id="touch" type="radio" name="ui" value="touch">Touch
+                        </label>
                     </div>
                     <div>
                         <button type="button" id="start-button">Play</button>
@@ -143,7 +156,7 @@
                     document.getElementById('end-menu').style.display = 'none';
                 }
 
-                var prefix = 'bounce_', game, ui, radioButtons;
+                var prefix = 'bounce_', game, ui, checkboxes, radioButtons;
 
                 // Select the corresponding radio button
                 ui = window.localStorage.getItem(prefix + 'ui');
@@ -160,7 +173,21 @@
                 game = Bounce.play('bounce-canvas', {
                     onMainMenuOpen: showStartMenu,
                     onEndMenuOpen: showEndMenu,
-                    isMouse: (ui === 'mouse')
+                    isMouse: (ui === 'mouse'),
+                    fast: document.getElementById('fast').checked,
+                    speedup: document.getElementById('speedup').checked,
+                    five: document.getElementById('five').checked,
+                    //big: document.getElementById('big').checked
+                });
+
+                // Handle mutator changes on the fly.
+                function checkboxChangeHandler(event) {
+                    game.bounce[this.value] = this.checked;
+                    game.state.start('Preloader');
+                }
+                checkboxes = document.querySelectorAll('input[name="mutator"]');
+                Array.prototype.forEach.call(checkboxes, function addEventHandler(checkbox) {
+                    checkbox.addEventListener('change', checkboxChangeHandler);
                 });
 
                 // Handle UI changes on the fly.
@@ -198,6 +225,7 @@
                     // is still down and the canvas stops receiving input. So, clear
                     // the selection so as to not move it when the player starts
                     // dragging again.
+                    // Note: I didn't enjoy this bug.
                     clearSelection();
                     game.state.start('Game');
                 }, false);

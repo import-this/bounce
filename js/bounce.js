@@ -304,6 +304,18 @@ var Bounce = {
     },
 
     /**
+     * Game mutators.
+     */
+    mutators: {
+        fastFactor: 1.35,
+        speedup: {
+            interval: 2000, // millisecs
+            inc: 12         // pixels/sec increment
+        },
+        bigFactor: 1.5
+    },
+
+    /**
      * Keyboard Controls.
      */
     controls: {
@@ -573,7 +585,7 @@ Bounce._BounceState.prototype.addBackground = function() {
     return this.add.image(0, 0, this.cache.getBitmapData(CACHE_KEY_BG));
 };
 
-Bounce._BounceState.prototype.createRects = function(group) {
+Bounce._BounceState.prototype.createRects = function(group, five) {
     function createRect(game, group, props, i) {
         var rect = group.create(0, 0, game.cache.getBitmapData(props.key));
 
@@ -582,7 +594,7 @@ Bounce._BounceState.prototype.createRects = function(group) {
         setSpriteProps(rect, props.pos);
     }
 
-    [{
+    var rectProps = [{
         // Top-left
         pos: {
             top: -Bounce.rect.offset,
@@ -610,7 +622,21 @@ Bounce._BounceState.prototype.createRects = function(group) {
             right: this.bounds.width + Bounce.rect.offset
         },
         key: CACHE_KEY_RECTS[2]
-    }].forEach(function(props, index) {
+    }];
+
+    if (five) {
+        rectProps.push({
+            // Top-middle
+            pos: {
+                top: -Bounce.rect.offset,
+                left: -Bounce.rect.offset + Math.round(
+                    (this.bounds.width - this.bounce.dimlist[0].width) / 2)
+            },
+            key: CACHE_KEY_RECTS[0]
+        });
+    }
+
+    rectProps.forEach(function(props, index) {
         createRect(this, group, props, index);
     }, this);
 };
@@ -808,7 +834,7 @@ Bounce.MainMenu.prototype.create = function() {
         this.cache.getBitmapData(CACHE_KEY_PLAYER));
     sprite.anchor.set(0.5, 0.5);
 
-    this.createRects(this.add.group());
+    this.createRects(this.add.group(), this.game.bounce.five);
 
     this.camera.follow(this.world);
 
@@ -867,6 +893,8 @@ Bounce.Game = function(game) {
 
     this._player = null;
     this._rects = null;
+
+    this._speed = 0;
 };
 
 Bounce.Game.prototype = Object.create(Bounce._BounceState.prototype);
@@ -928,7 +956,7 @@ Bounce.Game.prototype._addPlayer = function(playerColGroup, rectsColGroup) {
 Bounce.Game.prototype._addRects = function(rectsColGroup, playerColGroup) {
     this._rects = this.add.physicsGroup(PHYSICS_SYSTEM);
     this._rects.name = 'Rectangles';
-    this.createRects(this._rects);
+    this.createRects(this._rects, this.game.bounce.five);
     this._rects.forEach(function setRectBody(rect, rectsColGroup, playerColGroup) {
         var offset = Bounce.rect.offset;
 
@@ -983,11 +1011,33 @@ Bounce.Game.prototype.quit = function quit() {
 };
 
 Bounce.Game.prototype.create = function() {
-    var playerColGroup, rectsColGroup;
+    var stdSpeed, playerColGroup, rectsColGroup;
 
     if (DEBUG) log('Creating Game state...');
 
     Bounce._BounceState.prototype.create.call(this);
+
+    // Mutators.
+    // Faster boxes mutator enabled?
+    stdSpeed = this.bounce.rect.speed;
+    this._speed = (this.game.bounce.fast) ?
+        Math.round(stdSpeed * Bounce.mutators.fastFactor) : stdSpeed;
+    // Accelerating boxes mutator enabled?
+    if (this.game.bounce.speedup) {
+        this.input.onDown.addOnce(function startAcc() {
+            this.time.events.loop(Bounce.mutators.speedup.interval, function acc() {
+                this._speed += Bounce.mutators.speedup.inc;
+                this._rects.forEach(function accelerate(rect) {
+                    var velocity = rect.body.velocity;
+
+                    if (velocity.x !== 0) {       // Shapes have started moving.
+                        velocity.x = (velocity.x > 0) ? this._speed : -this._speed;
+                        velocity.y = (velocity.y > 0) ? this._speed : -this._speed;
+                    }
+                }, this);
+            }, this);
+        }, this);
+    }
 
     this.addBackground();
 
@@ -1022,7 +1072,7 @@ Bounce.Game.prototype.create = function() {
         this._rects.destroy();
         this._addRects(rectsColGroup, playerColGroup);
         this._rects.forEach(function setSpeed(rect) {
-            rect.body.velocity.x = rect.body.velocity.y = this.bounce.rect.speed;
+            rect.body.velocity.x = rect.body.velocity.y = this._speed;
         }, this);
     }, this);
 
@@ -1041,9 +1091,9 @@ Bounce.Game.prototype.update = function() {
         this._rects.forEach(function assert(rect) {
             var velocity = rect.body.velocity;
 
-            if (velocity.x > 0) {       // Shapes have started moving.
-                if (Math.abs(velocity.x) !== this.bounce.rect.speed ||
-                        Math.abs(velocity.y) !== this.bounce.rect.speed)
+            if (velocity.x !== 0) {       // Shapes have started moving.
+                if (Math.abs(velocity.x) !== this._speed ||
+                        Math.abs(velocity.y) !== this._speed)
                     throw new Error('Speed loss!');
             }
         }, this);
@@ -1083,7 +1133,16 @@ Bounce.play = function play(parent, config) {
     var opts = Phaser.Utils.extend({
         onMainMenuOpen: noop,
         onEndMenuOpen: noop,
-        isMouse: false
+        // The UI uses a mouse or a touch surface?
+        isMouse: false,
+        // The boxes are moving faster.
+        fast: false,
+        // The boxes accelerate as the game progresses.
+        speedup: false,
+        // Five boxes!
+        five: false,
+        // Bigger boxes.
+        big: false
     }, config),
     game = new Phaser.Game({
         width: (opts.isMouse) ? NATIVE_WIDTH : NATIVE_HEIGHT,
@@ -1100,7 +1159,7 @@ Bounce.play = function play(parent, config) {
     Bounce.storage = new Bounce.GameStorageManager();
 
     // Global per-instance options. Use a namespace to avoid name clashes.
-    game.bounce = config;
+    game.bounce = opts;
 
     game.state.add('Boot', Bounce.Boot);
     game.state.add('Preloader', Bounce.Preloader);
